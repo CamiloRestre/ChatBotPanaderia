@@ -1,0 +1,18 @@
+{
+  "name": "panaderia-bot",
+  "version": "1.0.0",
+  "description": "Chatbot de WhatsApp para una panadería, con base de conocimientos propia y respaldo de IA (Gemini).",
+  "type": "module",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@google/genai": "^0.3.0",
+    "dotenv": "^16.4.5",
+    "express": "^4.19.2"
+  }
+}
