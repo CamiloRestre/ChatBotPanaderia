@@ -7,8 +7,8 @@
 // products.js. Cuando el mensaje del cliente no calza con nada de esto,
 // se usa ai.js (Gemini) como respaldo.
 
-import { sendWhatsAppMessage, sendWhatsAppDocument } from "../src/config/whatsapp.js";
-import { products, formatPrice, CATEGORY_LABELS } from "../products.js";
+import { sendWhatsAppMessage, sendWhatsAppDocument } from "../config/whatsapp.js";
+import { products, formatPrice, CATEGORY_LABELS } from "../data/products.js";
 import { getAiSalesResponse } from "./ai.js";
 import { notifyMake } from "./notify.js";
 

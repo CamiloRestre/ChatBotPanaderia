@@ -5,7 +5,7 @@
 
 import { GoogleGenAI } from "@google/genai";
 import dotenv from "dotenv";
-import { products, formatPrice, CATEGORY_LABELS } from "./products.js";
+import { products, formatPrice, CATEGORY_LABELS } from "../data/products.js";   
 
 dotenv.config({ override: true });
 
