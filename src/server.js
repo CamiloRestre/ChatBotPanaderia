@@ -25,6 +25,30 @@ app.get("/health", (_req, res) => {
   res.status(200).send("OK");
 });
 
+// Endpoint para webhooks externos de Make (por ejemplo, Google Sheets, Telegram, CRM, etc.)
+app.post("/make", (req, res) => {
+  const payload = req.body || {};
+  console.log("📥 Webhook de Make recibido:", JSON.stringify(payload));
+
+  return res.status(200).json({
+    ok: true,
+    message: "Webhook de Make recibido correctamente",
+    receivedAt: new Date().toISOString()
+  });
+});
+
+// Endpoint para integraciones o callbacks de Render.
+app.post("/render", (req, res) => {
+  const payload = req.body || {};
+  console.log("📥 Evento de Render recibido:", JSON.stringify(payload));
+
+  return res.status(200).json({
+    ok: true,
+    message: "Evento de Render recibido correctamente",
+    receivedAt: new Date().toISOString()
+  });
+});
+
 app.get("/privacidad", (req, res) => {
   res.type("html").send(`
     <h1>Política de Privacidad — Bot Panadería Molinos</h1>
