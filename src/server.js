@@ -25,6 +25,21 @@ app.get("/health", (_req, res) => {
   res.status(200).send("OK");
 });
 
+app.get("/privacidad", (req, res) => {
+  res.type("html").send(`
+    <h1>Política de Privacidad — Bot Panadería Molinos</h1>
+    <p>Este chatbot de WhatsApp usa la información que nos compartes
+    (nombre, número de teléfono, dirección y detalles del pedido)
+    únicamente para gestionar tu pedido y comunicarnos contigo.</p>
+    <p>No compartimos tus datos con terceros distintos a los necesarios
+    para procesar el pedido (por ejemplo, herramientas internas de
+    automatización). No usamos tu información con fines publicitarios.</p>
+    <p>Puedes solicitar la eliminación de tus datos escribiéndonos
+    directamente por este mismo chat.</p>
+    <p>Contacto: camiloproyectos14@gmail.com</p>
+  `);
+});
+
 // META llama a esta ruta UNA VEZ, cuando configuras el webhook.
 app.get("/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
