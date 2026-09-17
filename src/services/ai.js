@@ -13,9 +13,9 @@ const BAKERY_NAME = process.env.BAKERY_NAME || "Panadería Dulce Hogar";
 
 // La API KEY de Gemini se lee desde la variable de entorno GEMINI_API_KEY
 // (ver .env.example). Nunca se escribe la key directamente en el código.
-const ai = new GoogleGenAI({
-  apiKey: process.env.GEMINI_API_KEY
-});
+const ai = process.env.GEMINI_API_KEY
+  ? new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY })
+  : null;
 
 function getCatalogContext() {
   return products
@@ -64,8 +64,12 @@ MENSAJE DEL CLIENTE:
 Responde como asesora de WhatsApp en español colombiano.
 `;
 
+    if (!ai) {
+      return null;
+    }
+
     const response = await ai.models.generateContent({
-      model: "gemini-3.6-flash",
+      model: "gemini-2.5-flash",
       contents: prompt
     });
 

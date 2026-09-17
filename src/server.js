@@ -62,14 +62,14 @@ app.post("/webhook", async (req, res) => {
     const entry = req.body.entry?.[0];
     const change = entry?.changes?.[0];
     const value = change?.value;
-    const message = value?.messages?.[0];
+    const message = value?.messages?.find((item) => item?.type === "text");
 
-    if (!message) return;
+    if (!message?.text?.body) return;
 
     const phone = message.from;
-    const text = message.text?.body;
+    const text = message.text.body;
 
-    if (!text) return;
+    if (!text || !String(text).trim()) return;
 
     await handleIncomingMessage(phone, text);
   } catch (error) {

@@ -28,6 +28,12 @@ const PAYMENT_INFO = {
   holderName: process.env.PAYMENT_HOLDER_NAME || "Nombre del Titular"
 };
 
+function getFreshState(phone, extra = {}) {
+  const nextState = { step: "MAIN_MENU", cart: [], ...extra };
+  states.set(phone, nextState);
+  return nextState;
+}
+
 export async function handleIncomingMessage(phone, message) {
   const rawText = message.trim();
   const text = normalize(rawText);
@@ -45,7 +51,7 @@ export async function handleIncomingMessage(phone, message) {
   }
 
   if (isMainMenuRequest(text)) {
-    states.set(phone, { step: "MAIN_MENU", cart: [] });
+    getFreshState(phone);
     return sendMainMenu(phone);
   }
 
@@ -73,7 +79,7 @@ export async function handleIncomingMessage(phone, message) {
       return sendAiHelpOrFallback(phone, text, newState, "PRODUCT_FOUND");
     }
 
-    states.set(phone, { step: "MAIN_MENU", cart: [] });
+    getFreshState(phone);
     return sendMainMenu(phone);
   }
 
@@ -118,14 +124,16 @@ export async function handleIncomingMessage(phone, message) {
       return handleLeadNeedStep(phone, rawText, state);
 
     case "ORDER_CONFIRMED":
-    case "LEAD_REGISTERED":
+    case "LEAD_REGISTERED": {
+      getFreshState(phone);
       return sendWhatsAppMessage(
         phone,
         "Ya quedó registrado ✅ Si deseas hacer otro pedido, escribe *menu*."
       );
+    }
 
     default:
-      states.set(phone, { step: "MAIN_MENU", cart: [] });
+      getFreshState(phone);
       return sendMainMenu(phone);
   }
 }
@@ -618,7 +626,7 @@ async function handlePaymentMethodStep(phone, text, state) {
   // Si configuras MAKE_WEBHOOK_URL en .env, este evento llega a tu escenario
   // de Make (por ejemplo para guardarlo en Google Sheets o avisarte por
   // Telegram). Si no lo configuras, simplemente no hace nada.
-  notifyMake("nuevo_pedido", orderPayload);
+  await notifyMake("nuevo_pedido", orderPayload);
 
   const deliveryLine =
     state.deliveryMethod === "domicilio"
@@ -851,7 +859,7 @@ function handleLeadNameStep(phone, rawText, state) {
   return sendWhatsAppMessage(phone, `Gracias, ${state.customerName}. ¿En qué te podemos ayudar?`);
 }
 
-function handleLeadNeedStep(phone, rawText, state) {
+async function handleLeadNeedStep(phone, rawText, state) {
   state.need = rawText.trim();
   state.step = "LEAD_REGISTERED";
   states.set(phone, state);
@@ -866,7 +874,7 @@ function handleLeadNeedStep(phone, rawText, state) {
   console.log(JSON.stringify(leadPayload, null, 2));
   console.log("Estado: pendiente de revisión por el equipo\n");
 
-  notifyMake("solicitud_atencion", leadPayload);
+  await notifyMake("solicitud_atencion", leadPayload);
 
   return sendWhatsAppMessage(
     phone,
