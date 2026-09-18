@@ -26,15 +26,39 @@ app.get("/health", (_req, res) => {
 });
 
 // Endpoint para webhooks externos de Make (por ejemplo, Google Sheets, Telegram, CRM, etc.)
-app.post("/make", (req, res) => {
+app.post("/make", async (req, res) => {
   const payload = req.body || {};
   console.log("📥 Webhook de Make recibido:", JSON.stringify(payload));
 
-  return res.status(200).json({
-    ok: true,
-    message: "Webhook de Make recibido correctamente",
-    receivedAt: new Date().toISOString()
-  });
+  try {
+    // Extraer el mensaje del cliente
+    const message = payload.messages?.[0]?.text?.body;
+    const phone = payload.messages?.[0]?.from;
+
+    if (!message) {
+      return res.status(400).json({ ok: false, error: "No hay mensaje" });
+    }
+
+    if (!phone) {
+      return res.status(400).json({ ok: false, error: "No hay número de remitente" });
+    }
+
+    // Procesar el mensaje con la lógica de conversación
+    const respuesta = await handleIncomingMessage(phone, message);
+
+    // Devolver la respuesta a Make
+    return res.status(200).json({
+      ok: true,
+      respuesta: respuesta || "Lo siento, no encontré información sobre eso."
+    });
+  } catch (error) {
+    console.error("❌ Error procesando el mensaje:", error);
+    return res.status(500).json({
+      ok: false,
+      error: "Error interno",
+      respuesta: "Hubo un error procesando tu mensaje. Intenta de nuevo."
+    });
+  }
 });
 
 // Endpoint para integraciones o callbacks de Render.
