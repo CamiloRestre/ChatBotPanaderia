@@ -46,11 +46,19 @@ app.post("/make", async (req, res) => {
       payload?.data?.from;
 
     if (!messageSource || !String(messageSource).trim()) {
-      return res.status(400).json({ ok: false, error: "No hay mensaje" });
+      return res.status(200).json({
+        ok: false,
+        error: "No hay mensaje",
+        respuesta: "No recibí ningún mensaje de texto para procesar."
+      });
     }
 
     if (!phone) {
-      return res.status(400).json({ ok: false, error: "No hay número de remitente" });
+      return res.status(200).json({
+        ok: false,
+        error: "No hay número de remitente",
+        respuesta: "No pude identificar el número del remitente."
+      });
     }
 
     // Procesar el mensaje con la lógica del bot.
@@ -70,7 +78,7 @@ app.post("/make", async (req, res) => {
     });
   } catch (error) {
     console.error("❌ Error procesando el mensaje:", error);
-    return res.status(500).json({
+    return res.status(200).json({
       ok: false,
       error: "Error interno",
       respuesta: "Hubo un error procesando tu mensaje. Intenta de nuevo."
