@@ -1,9 +1,9 @@
 ﻿// conversation.js
-// AquÃ­ vive la "lÃ³gica" del bot: quÃ© responder segÃºn lo que escribe el
-// cliente y en quÃ© paso de la conversaciÃ³n estÃ¡.
+// Aquí vive la "lógica" del bot: qué responder según lo que escribe el
+// cliente y en qué paso de la conversación está.
 //
-// Esta es la BASE DE CONOCIMIENTOS de flujo: los textos fijos (saludo, menÃº,
-// horarios, etc.) estÃ¡n escritos directamente aquÃ­. Los productos vienen de
+// Esta es la BASE DE CONOCIMIENTOS de flujo: los textos fijos (saludo, menú,
+// horarios, etc.) están escritos directamente aquí. Los productos vienen de
 // products.js. Cuando el mensaje del cliente no calza con nada de esto,
 // se usa ai.js (Gemini) como respaldo.
 
@@ -12,14 +12,14 @@ import { products, formatPrice, CATEGORY_LABELS } from "../data/products.js";
 import { getAiSalesResponse } from "./ai.js";
 import { notifyMake } from "./notify.js";
 
-// Guarda en memoria en quÃ© paso de la conversaciÃ³n va cada cliente.
-// (Se reinicia si el servidor se reinicia; para producciÃ³n real se podrÃ­a
+// Guarda en memoria en qué paso de la conversación va cada cliente.
+// (Se reinicia si el servidor se reinicia; para producción real se podría
 // mover a una base de datos, pero para este proyecto es suficiente).
 const states = new Map();
 
-const BAKERY_NAME = process.env.BAKERY_NAME || "PanaderÃ­a Dulce Hogar";
+const BAKERY_NAME = process.env.BAKERY_NAME || "Panadería Dulce Hogar";
 const BAKERY_ADDRESS =
-  process.env.BAKERY_ADDRESS || "Calle Principal #12-34, TuluÃ¡, Valle del Cauca";
+  process.env.BAKERY_ADDRESS || "Calle Principal #12-34, Tuluá, Valle del Cauca";
 const HUMAN_ATTENTION_SCHEDULE = process.env.HUMAN_ATTENTION_SCHEDULE || "7:00 a.m. a 7:00 p.m.";
 
 const PAYMENT_INFO = {
@@ -51,7 +51,7 @@ export async function handleIncomingMessage(phone, message) {
   if (!text) {
     return sendTextAndReturn(
       phone,
-      "No alcancÃ© a leer tu mensaje. Â¿Me escribes nuevamente, por favor? ðŸ˜Š"
+      "No alcancé a leer tu mensaje. ¿Me escribes nuevamente, por favor? 😊"
     );
   }
 
@@ -59,17 +59,17 @@ export async function handleIncomingMessage(phone, message) {
     getFreshState(phone);
     return sendTextAndReturn(
       phone,
-      `Hola ðŸ‘‹ Bienvenido/a a ${BAKERY_NAME}.
+      `Hola 👋 Bienvenido/a a ${BAKERY_NAME}.
 
 Soy el asistente virtual y puedo ayudarte con:
 
 1. Ver la carta
 2. Hacer un pedido
-3. RecomiÃ©ndame algo
-4. Horarios y ubicaciÃ³n
+3. Recomiéndame algo
+4. Horarios y ubicación
 5. Hablar con alguien del equipo
 
-Responde con el nÃºmero de la opciÃ³n que prefieras.`
+Responde con el número de la opción que prefieras.`
     );
   }
 
@@ -146,7 +146,7 @@ Responde con el nÃºmero de la opciÃ³n que prefieras.`
       getFreshState(phone);
       return sendTextAndReturn(
         phone,
-        "Ya quedÃ³ registrado âœ… Si deseas hacer otro pedido, escribe *menu*."
+        "Ya quedó registrado ✅ Si deseas hacer otro pedido, escribe *menu*."
       );
     }
 
@@ -157,23 +157,23 @@ Responde con el nÃºmero de la opciÃ³n que prefieras.`
 }
 
 // ---------------------------------------------------------------------------
-// MENÃš PRINCIPAL â€” esto es lo primero que ve el cliente al saludar
+// MENÚ PRINCIPAL — esto es lo primero que ve el cliente al saludar
 // ---------------------------------------------------------------------------
 
 function sendMainMenu(phone) {
   return sendTextAndReturn(
     phone,
-    `Hola ðŸ‘‹ Bienvenido/a a ${BAKERY_NAME}.
+    `Hola 👋 Bienvenido/a a ${BAKERY_NAME}.
 
 Soy el asistente virtual y puedo ayudarte con:
 
 1. Ver la carta
 2. Hacer un pedido
-3. RecomiÃ©ndame algo
-4. Horarios y ubicaciÃ³n
+3. Recomiéndame algo
+4. Horarios y ubicación
 5. Hablar con alguien del equipo
 
-Responde con el nÃºmero de la opciÃ³n que prefieras.`
+Responde con el número de la opción que prefieras.`
   );
 }
 
@@ -187,7 +187,7 @@ async function handleMainMenuStep(phone, text, rawText, state) {
     return askProductName(
       phone,
       state,
-      "Claro ðŸ˜Š Â¿QuÃ© te gustarÃ­a pedir? EscrÃ­beme el nombre del producto, por ejemplo: Croissant, Torta de chocolate, CafÃ©."
+      "Claro 😊 ¿Qué te gustaría pedir? Escríbeme el nombre del producto, por ejemplo: Croissant, Torta de chocolate, Café."
     );
   }
 
@@ -201,9 +201,9 @@ async function handleMainMenuStep(phone, text, rawText, state) {
   if (text === "4" || text.includes("horario") || text.includes("ubicacion") || text.includes("direccion")) {
     return sendTextAndReturn(
       phone,
-      `ðŸ“ Estamos en: ${BAKERY_ADDRESS}
+      `📍 Estamos en: ${BAKERY_ADDRESS}
 
-ðŸ•’ Horario de atenciÃ³n: ${HUMAN_ATTENTION_SCHEDULE}
+🕒 Horario de atención: ${HUMAN_ATTENTION_SCHEDULE}
 
 Escribe *menu* para ver las opciones de nuevo.`
     );
@@ -226,12 +226,12 @@ Escribe *menu* para ver las opciones de nuevo.`
 
   return sendTextAndReturn(
     phone,
-    `Te entiendo ðŸ˜Š Para ayudarte mejor, elige una opciÃ³n:
+    `Te entiendo 😊 Para ayudarte mejor, elige una opción:
 
 1. Ver la carta
 2. Hacer un pedido
-3. RecomiÃ©ndame algo
-4. Horarios y ubicaciÃ³n
+3. Recomiéndame algo
+4. Horarios y ubicación
 5. Hablar con alguien del equipo`
   );
 }
@@ -240,14 +240,14 @@ async function sendCarta(phone, state) {
   const mediaId = process.env.CATALOG_MEDIA_ID || "";
   const filename = process.env.CATALOG_FILE_NAME || `Carta ${BAKERY_NAME}.pdf`;
 
-  // Si configuras CATALOG_MEDIA_ID en .env, se envÃ­a un PDF ya subido a Meta.
-  // Si no, se arma automÃ¡ticamente un texto con el catÃ¡logo (products.js).
+  // Si configuras CATALOG_MEDIA_ID en .env, se envía un PDF ya subido a Meta.
+  // Si no, se arma automáticamente un texto con el catálogo (products.js).
   if (mediaId) {
     await sendWhatsAppDocument(
       phone,
       mediaId,
       filename,
-      "AquÃ­ tienes nuestra carta actualizada ðŸ˜Š"
+      "Aquí tienes nuestra carta actualizada 😊"
     );
   } else {
     const menuText = buildMenuText();
@@ -260,7 +260,7 @@ async function sendCarta(phone, state) {
 
   return sendTextAndReturn(
     phone,
-    "Cuando veas algo que te guste, escrÃ­beme el nombre para agregarlo a tu pedido ðŸ˜Š"
+    "Cuando veas algo que te guste, escríbeme el nombre para agregarlo a tu pedido 😊"
   );
 }
 
@@ -269,13 +269,13 @@ function buildMenuText() {
     const items = products.filter((p) => p.available && p.category === category);
 
     const lines = items
-      .map((product) => `â€¢ ${product.name} â€” ${formatPrice(product.price)}`)
+      .map((product) => `• ${product.name} — ${formatPrice(product.price)}`)
       .join("\n");
 
     return `*${CATEGORY_LABELS[category]}*\n${lines}`;
   });
 
-  return `ðŸ“‹ Esta es nuestra carta:\n\n${sections.join("\n\n")}`;
+  return `📋 Esta es nuestra carta:\n\n${sections.join("\n\n")}`;
 }
 
 function askProductName(phone, state, message) {
@@ -287,10 +287,10 @@ function askProductName(phone, state, message) {
     phone,
     `${message}
 
-TambiÃ©n puedes responder:
+También puedes responder:
 
 1. Ver la carta
-2. RecomiÃ©ndame algo
+2. Recomiéndame algo
 3. Hablar con alguien del equipo`
   );
 }
@@ -302,13 +302,13 @@ function offerProductHelp(phone, state) {
 
   return sendTextAndReturn(
     phone,
-    `No hay problema ðŸ˜Š Puedes elegir una de estas opciones:
+    `No hay problema 😊 Puedes elegir una de estas opciones:
 
 1. Ver la carta
-2. RecomiÃ©ndame algo
+2. Recomiéndame algo
 3. Hablar con alguien del equipo
 
-Responde con el nÃºmero de la opciÃ³n que prefieras.`
+Responde con el número de la opción que prefieras.`
   );
 }
 
@@ -324,32 +324,32 @@ async function sendAiHelpOrFallback(phone, text, state, nextStep) {
       phone,
       `${aiResponse}
 
-Si algo te gustÃ³, escrÃ­beme el nombre del producto y te ayudo a agregarlo al pedido ðŸ˜Š
+Si algo te gustó, escríbeme el nombre del producto y te ayudo a agregarlo al pedido 😊
 
-TambiÃ©n puedes responder:
+También puedes responder:
 
 1. Ver la carta
-2. RecomiÃ©ndame algo
+2. Recomiéndame algo
 3. Hablar con alguien del equipo`
     );
   }
 
   return sendTextAndReturn(
     phone,
-    `Te ayudo con gusto ðŸ˜Š
+    `Te ayudo con gusto 😊
 
 Puedes elegir una de estas opciones:
 
 1. Ver la carta
-2. RecomiÃ©ndame algo
+2. Recomiéndame algo
 3. Hablar con alguien del equipo
 
-O escrÃ­beme el nombre de un producto que quieras buscar.`
+O escríbeme el nombre de un producto que quieras buscar.`
   );
 }
 
 // ---------------------------------------------------------------------------
-// BÃšSQUEDA Y SELECCIÃ“N DE PRODUCTO
+// BÚSQUEDA Y SELECCIÓN DE PRODUCTO
 // ---------------------------------------------------------------------------
 
 async function handleProductFoundStep(phone, text, state) {
@@ -387,7 +387,7 @@ async function handleProductFoundStep(phone, text, state) {
   const selectedIndex = Number(text);
 
   if (!Number.isInteger(selectedIndex) || selectedIndex < 1 || selectedIndex > state.foundProducts.length) {
-    return sendTextAndReturn(phone, "Por favor responde con el nÃºmero del producto que quieres agregar ðŸ˜Š");
+    return sendTextAndReturn(phone, "Por favor responde con el número del producto que quieres agregar 😊");
   }
 
   const selectedProduct = state.foundProducts[selectedIndex - 1];
@@ -401,30 +401,30 @@ async function handleProductFoundStep(phone, text, state) {
 
 function sendProductSearchResults(phone, foundProducts) {
   const productList = foundProducts
-    .map((product, index) => `${index + 1}. ${product.name} â€” ${formatPrice(product.price)}\n${product.description}`)
+    .map((product, index) => `${index + 1}. ${product.name} — ${formatPrice(product.price)}\n${product.description}`)
     .join("\n\n");
 
   return sendTextAndReturn(
     phone,
-    `EncontrÃ© estas opciones relacionadas con tu bÃºsqueda:
+    `Encontré estas opciones relacionadas con tu búsqueda:
 
 ${productList}
 
-Â¿CuÃ¡l te gustarÃ­a agregar a tu pedido?
+¿Cuál te gustaría agregar a tu pedido?
 
-Responde con el nÃºmero de la opciÃ³n ðŸ˜Š`
+Responde con el número de la opción 😊`
   );
 }
 
 function askForQuantityAfterProduct(phone, selectedProduct) {
   return sendTextAndReturn(
     phone,
-    `Excelente elecciÃ³n ðŸ”¥
+    `Excelente elección 🔥
 
 Seleccionaste: ${selectedProduct.name}
 Precio: ${formatPrice(selectedProduct.price)}
 
-Â¿CuÃ¡ntas unidades deseas agregar?`
+¿Cuántas unidades deseas agregar?`
   );
 }
 
@@ -432,7 +432,7 @@ function handleQuantityStep(phone, text, state) {
   const quantity = Number(text);
 
   if (!Number.isInteger(quantity) || quantity < 1) {
-    return sendTextAndReturn(phone, "Por favor dime cuÃ¡ntas unidades deseas. Ejemplo: 1, 2, 3...");
+    return sendTextAndReturn(phone, "Por favor dime cuántas unidades deseas. Ejemplo: 1, 2, 3...");
   }
 
   addProductToCart(state, state.selectedProduct, quantity);
@@ -444,7 +444,7 @@ function handleQuantityStep(phone, text, state) {
 
 function handleAddMoreStep(phone, text, state) {
   if (isYes(text)) {
-    return askProductName(phone, state, "Perfecto ðŸ˜Š Â¿QuÃ© otro producto deseas agregar?");
+    return askProductName(phone, state, "Perfecto 😊 ¿Qué otro producto deseas agregar?");
   }
 
   if (isNo(text)) {
@@ -455,11 +455,11 @@ function handleAddMoreStep(phone, text, state) {
       phone,
       `${buildCartSummary(state)}
 
-Para dejar tu pedido registrado, Â¿me regalas tu nombre, por favor?`
+Para dejar tu pedido registrado, ¿me regalas tu nombre, por favor?`
     );
   }
 
-  return sendTextAndReturn(phone, "Â¿Deseas agregar otro producto al pedido? Responde *sÃ­* o *no* ðŸ˜Š");
+  return sendTextAndReturn(phone, "¿Deseas agregar otro producto al pedido? Responde *sí* o *no* 😊");
 }
 
 function addProductToCart(state, product, quantity) {
@@ -500,9 +500,9 @@ function sendCartSummaryWithAddMoreQuestion(phone, state) {
     phone,
     `${buildCartSummary(state)}
 
-Â¿Deseas agregar otro producto al pedido?
+¿Deseas agregar otro producto al pedido?
 
-Responde *sÃ­* para agregar otro o *no* para continuar con tus datos.`
+Responde *sí* para agregar otro o *no* para continuar con tus datos.`
   );
 }
 
@@ -510,10 +510,10 @@ function buildCartSummary(state) {
   calculateCartTotals(state);
 
   const cartLines = state.cart
-    .map((item, index) => `${index + 1}. ${item.product.name} x${item.quantity} â€” ${formatPrice(item.subtotal)}`)
+    .map((item, index) => `${index + 1}. ${item.product.name} x${item.quantity} — ${formatPrice(item.subtotal)}`)
     .join("\n");
 
-  return `ðŸ›’ Resumen de tu pedido:
+  return `🛒 Resumen de tu pedido:
 
 ${cartLines}
 
@@ -528,7 +528,7 @@ function handleCustomerNameStep(phone, rawText, state) {
   const name = rawText.trim();
 
   if (name.length < 2 || isInvalidText(name)) {
-    return sendTextAndReturn(phone, "Por favor escrÃ­beme tu nombre. Ejemplo: FabiÃ¡n ðŸ˜Š");
+    return sendTextAndReturn(phone, "Por favor escríbeme tu nombre. Ejemplo: Fabián 😊");
   }
 
   state.customerName = capitalizeWords(name);
@@ -537,11 +537,11 @@ function handleCustomerNameStep(phone, rawText, state) {
 
   return sendTextAndReturn(
     phone,
-    `Gracias, ${state.customerName} ðŸ˜Š
+    `Gracias, ${state.customerName} 😊
 
-Â¿CÃ³mo prefieres recibir tu pedido?
+¿Cómo prefieres recibir tu pedido?
 
-1. Recoger en la panaderÃ­a
+1. Recoger en la panadería
 2. Domicilio`
   );
 }
@@ -552,9 +552,9 @@ function handleDeliveryMethodStep(phone, text, state) {
   if (!method) {
     return sendTextAndReturn(
       phone,
-      `Por favor elige una opciÃ³n vÃ¡lida:
+      `Por favor elige una opción válida:
 
-1. Recoger en la panaderÃ­a
+1. Recoger en la panadería
 2. Domicilio`
     );
   }
@@ -567,7 +567,7 @@ function handleDeliveryMethodStep(phone, text, state) {
 
     return sendTextAndReturn(
       phone,
-      "Perfecto ðŸ˜Š Dime la direcciÃ³n completa y el barrio para el domicilio. Ejemplo: Calle 10 # 20-30, barrio Centro."
+      "Perfecto 😊 Dime la dirección completa y el barrio para el domicilio. Ejemplo: Calle 10 # 20-30, barrio Centro."
     );
   }
 
@@ -583,7 +583,7 @@ function handleAddressStep(phone, rawText, state) {
   if (address.length < 5 || isInvalidText(address)) {
     return sendTextAndReturn(
       phone,
-      "Por favor escrÃ­beme una direcciÃ³n mÃ¡s completa. Ejemplo: Calle 10 # 20-30, barrio Centro ðŸ˜Š"
+      "Por favor escríbeme una dirección más completa. Ejemplo: Calle 10 # 20-30, barrio Centro 😊"
     );
   }
 
@@ -597,7 +597,7 @@ function handleAddressStep(phone, rawText, state) {
 function sendPaymentQuestion(phone) {
   return sendTextAndReturn(
     phone,
-    `Â¿QuÃ© mÃ©todo de pago prefieres?
+    `¿Qué método de pago prefieres?
 
 1. Transferencia
 2. Efectivo contraentrega`
@@ -610,7 +610,7 @@ async function handlePaymentMethodStep(phone, text, state) {
   if (!paymentMethod) {
     return sendTextAndReturn(
       phone,
-      `Elige una opciÃ³n vÃ¡lida:
+      `Elige una opción válida:
 
 1. Transferencia
 2. Efectivo contraentrega`
@@ -637,9 +637,9 @@ async function handlePaymentMethodStep(phone, text, state) {
     total: state.totalPrice
   };
 
-  console.log("\nðŸ“¦ PEDIDO NUEVO");
+  console.log("\n📦 PEDIDO NUEVO");
   console.log(JSON.stringify(orderPayload, null, 2));
-  console.log("Estado: pendiente de confirmaciÃ³n\n");
+  console.log("Estado: pendiente de confirmación\n");
 
   // Si configuras MAKE_WEBHOOK_URL en .env, este evento llega a tu escenario
   // de Make (por ejemplo para guardarlo en Google Sheets o avisarte por
@@ -648,13 +648,13 @@ async function handlePaymentMethodStep(phone, text, state) {
 
   const deliveryLine =
     state.deliveryMethod === "domicilio"
-      ? `Entrega: Domicilio\nDirecciÃ³n: ${state.address}`
+      ? `Entrega: Domicilio\nDirección: ${state.address}`
       : `Entrega: Recoger en ${BAKERY_NAME} (${BAKERY_ADDRESS})`;
 
   if (paymentMethod === "transferencia") {
     return sendTextAndReturn(
       phone,
-      `Listo, ${state.customerName} âœ… Tu pedido quedÃ³ registrado:
+      `Listo, ${state.customerName} ✅ Tu pedido quedó registrado:
 
 ${buildCartSummary(state)}
 
@@ -662,42 +662,42 @@ ${deliveryLine}
 Pago: Transferencia
 
 Puedes transferir a:
-${PAYMENT_INFO.bank} â€” ${PAYMENT_INFO.accountNumber}
+${PAYMENT_INFO.bank} — ${PAYMENT_INFO.accountNumber}
 Titular: ${PAYMENT_INFO.holderName}
 
-Cuando hagas el pago, envÃ­a el comprobante por este chat.
+Cuando hagas el pago, envía el comprobante por este chat.
 
-Gracias por preferir a ${BAKERY_NAME} ðŸ¥`
+Gracias por preferir a ${BAKERY_NAME} 🥐`
     );
   }
 
   return sendTextAndReturn(
     phone,
-    `Listo, ${state.customerName} âœ… Tu pedido quedÃ³ registrado:
+    `Listo, ${state.customerName} ✅ Tu pedido quedó registrado:
 
 ${buildCartSummary(state)}
 
 ${deliveryLine}
 Pago: Efectivo contraentrega
 
-Gracias por preferir a ${BAKERY_NAME} ðŸ¥`
+Gracias por preferir a ${BAKERY_NAME} 🥐`
   );
 }
 
 // ---------------------------------------------------------------------------
-// RECOMENDACIONES ("no sÃ© quÃ© pedir")
+// RECOMENDACIONES ("no sé qué pedir")
 // ---------------------------------------------------------------------------
 
 function sendRecoCategoryQuestion(phone) {
   return sendTextAndReturn(
     phone,
-    `Â¿QuÃ© se te antoja hoy? ðŸ˜Š
+    `¿Qué se te antoja hoy? 😊
 
 1. Pan
 2. Pasteles o tortas
 3. Postres
 4. Bebidas
-5. SorprÃ©ndeme`
+5. Sorpréndeme`
   );
 }
 
@@ -707,13 +707,13 @@ function handleRecoCategoryStep(phone, text, state) {
   if (!category) {
     return sendTextAndReturn(
       phone,
-      `Elige una opciÃ³n vÃ¡lida:
+      `Elige una opción válida:
 
 1. Pan
 2. Pasteles o tortas
 3. Postres
 4. Bebidas
-5. SorprÃ©ndeme`
+5. Sorpréndeme`
     );
   }
 
@@ -723,12 +723,12 @@ function handleRecoCategoryStep(phone, text, state) {
 
   return sendTextAndReturn(
     phone,
-    `Â¿Para quÃ© ocasiÃ³n es?
+    `¿Para qué ocasión es?
 
-1. Antojo del dÃ­a
-2. CumpleaÃ±os o celebraciÃ³n
+1. Antojo del día
+2. Cumpleaños o celebración
 3. Para compartir en familia u oficina
-4. No sÃ©, muÃ©strame lo mÃ¡s pedido`
+4. No sé, muéstrame lo más pedido`
   );
 }
 
@@ -738,12 +738,12 @@ function handleRecoMoodStep(phone, text, state) {
   if (!mood) {
     return sendTextAndReturn(
       phone,
-      `Elige una opciÃ³n vÃ¡lida:
+      `Elige una opción válida:
 
-1. Antojo del dÃ­a
-2. CumpleaÃ±os o celebraciÃ³n
+1. Antojo del día
+2. Cumpleaños o celebración
 3. Para compartir en familia u oficina
-4. No sÃ©, muÃ©strame lo mÃ¡s pedido`
+4. No sé, muéstrame lo más pedido`
     );
   }
 
@@ -756,18 +756,18 @@ function handleRecoMoodStep(phone, text, state) {
   states.set(phone, state);
 
   const productList = recommendedProducts
-    .map((product, index) => `${index + 1}. ${product.name} â€” ${formatPrice(product.price)}\n${product.description}`)
+    .map((product, index) => `${index + 1}. ${product.name} — ${formatPrice(product.price)}\n${product.description}`)
     .join("\n\n");
 
   return sendTextAndReturn(
     phone,
-    `SegÃºn lo que me cuentas, esto te puede gustar:
+    `Según lo que me cuentas, esto te puede gustar:
 
 ${productList}
 
-Â¿CuÃ¡l te gustarÃ­a agregar a tu pedido?
+¿Cuál te gustaría agregar a tu pedido?
 
-Responde con el nÃºmero de la opciÃ³n ðŸ˜Š`
+Responde con el número de la opción 😊`
   );
 }
 
@@ -775,7 +775,7 @@ function handleRecommendationSelectionStep(phone, text, state) {
   const selectedIndex = Number(text);
 
   if (!Number.isInteger(selectedIndex) || selectedIndex < 1 || selectedIndex > state.recommendedProducts.length) {
-    return sendTextAndReturn(phone, "Por favor responde con el nÃºmero de la opciÃ³n que quieres agregar ðŸ˜Š");
+    return sendTextAndReturn(phone, "Por favor responde con el número de la opción que quieres agregar 😊");
   }
 
   const selectedProduct = state.recommendedProducts[selectedIndex - 1];
@@ -815,7 +815,7 @@ function getRecommendations(state) {
   }
 
   // Si no hay suficientes con el filtro exacto, se completa con productos
-  // de la misma categorÃ­a (o populares en general) hasta llegar a 3.
+  // de la misma categoría (o populares en general) hasta llegar a 3.
   const combined = [...filtered];
   const pool = products.filter((p) => p.available);
 
@@ -842,7 +842,7 @@ function parseRecoMood(text) {
   if (text === "1" || text.includes("antojo")) return "antojo";
   if (text === "2" || text.includes("cumple")) return "cumpleanos";
   if (text === "3" || text.includes("compartir")) return "compartir";
-  if (text === "4" || text.includes("no se") || text.includes("no sÃ©") || text.includes("pedido")) return "populares";
+  if (text === "4" || text.includes("no se") || text.includes("no sé") || text.includes("pedido")) return "populares";
   return null;
 }
 
@@ -855,11 +855,11 @@ function handleHumanHandoff(phone) {
 
   return sendTextAndReturn(
     phone,
-    `Claro ðŸ˜Š Puedo dejar tu solicitud registrada para que alguien del equipo te escriba.
+    `Claro 😊 Puedo dejar tu solicitud registrada para que alguien del equipo te escriba.
 
-Nuestro horario de atenciÃ³n es de ${HUMAN_ATTENTION_SCHEDULE}.
+Nuestro horario de atención es de ${HUMAN_ATTENTION_SCHEDULE}.
 
-Â¿Me regalas tu nombre, por favor?`
+¿Me regalas tu nombre, por favor?`
   );
 }
 
@@ -867,14 +867,14 @@ function handleLeadNameStep(phone, rawText, state) {
   const name = rawText.trim();
 
   if (name.length < 2) {
-    return sendTextAndReturn(phone, "Â¿Me regalas tu nombre, por favor? ðŸ˜Š");
+    return sendTextAndReturn(phone, "¿Me regalas tu nombre, por favor? 😊");
   }
 
   state.customerName = capitalizeWords(name);
   state.step = "ASK_LEAD_NEED";
   states.set(phone, state);
 
-  return sendTextAndReturn(phone, `Gracias, ${state.customerName}. Â¿En quÃ© te podemos ayudar?`);
+  return sendTextAndReturn(phone, `Gracias, ${state.customerName}. ¿En qué te podemos ayudar?`);
 }
 
 async function handleLeadNeedStep(phone, rawText, state) {
@@ -888,24 +888,24 @@ async function handleLeadNeedStep(phone, rawText, state) {
     need: state.need
   };
 
-  console.log("\nðŸ“© SOLICITUD DE ATENCIÃ“N PERSONALIZADA");
+  console.log("\n📩 SOLICITUD DE ATENCIÓN PERSONALIZADA");
   console.log(JSON.stringify(leadPayload, null, 2));
-  console.log("Estado: pendiente de revisiÃ³n por el equipo\n");
+  console.log("Estado: pendiente de revisión por el equipo\n");
 
   await notifyMake("solicitud_atencion", leadPayload);
 
   return sendTextAndReturn(
     phone,
-    `Gracias, ${state.customerName} âœ… Dejamos tu solicitud registrada:
+    `Gracias, ${state.customerName} ✅ Dejamos tu solicitud registrada:
 
 ${state.need}
 
-Alguien del equipo revisarÃ¡ este chat en horario de atenciÃ³n. Gracias por escribirnos ðŸ˜Š`
+Alguien del equipo revisará este chat en horario de atención. Gracias por escribirnos 😊`
   );
 }
 
 // ---------------------------------------------------------------------------
-// BÃšSQUEDA Y UTILIDADES
+// BÚSQUEDA Y UTILIDADES
 // ---------------------------------------------------------------------------
 
 function searchProducts(text) {
@@ -953,7 +953,7 @@ function isMainMenuRequest(text) {
 function shouldUseAi(text) {
   if (!text || text.length < 4) return false;
 
-  const directOptions = ["1", "2", "3", "4", "5", "si", "sÃ­", "no"];
+  const directOptions = ["1", "2", "3", "4", "5", "si", "sí", "no"];
   if (directOptions.includes(text)) return false;
 
   const aiKeywords = [
@@ -961,9 +961,9 @@ function shouldUseAi(text) {
     "busco",
     "recomienda",
     "recomiendame",
-    "recomiÃ©ndame",
+    "recomiéndame",
     "cumpleanos",
-    "cumpleaÃ±os",
+    "cumpleaños",
     "cumple",
     "sin gluten",
     "gluten",
@@ -976,7 +976,7 @@ function shouldUseAi(text) {
     "compartir",
     "personas",
     "cual es",
-    "cuÃ¡l es",
+    "cuál es",
     "mejor",
     "rico",
     "rica",
@@ -1004,7 +1004,7 @@ function parsePaymentMethod(text) {
 }
 
 function isYes(text) {
-  return text === "si" || text === "sÃ­" || text === "s" || text.includes("claro") || text.includes("otro");
+  return text === "si" || text === "sí" || text === "s" || text.includes("claro") || text.includes("otro");
 }
 
 function isNo(text) {
@@ -1085,4 +1085,3 @@ function isInvalidText(value) {
   const invalidWords = ["1", "2", "transferencia", "contraentrega", "pago", "domicilio", "recoger"];
   return invalidWords.includes(normalized);
 }
-
