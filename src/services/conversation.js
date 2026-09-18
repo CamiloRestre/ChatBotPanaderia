@@ -17,7 +17,7 @@ import { notifyMake } from "./notify.js";
 // mover a una base de datos, pero para este proyecto es suficiente).
 const states = new Map();
 
-const BAKERY_NAME = process.env.BAKERY_NAME || "Panadería Dulce Hogar";
+const BAKERY_NAME = process.env.BAKERY_NAME || "Panadería Molinos";
 const BAKERY_ADDRESS =
   process.env.BAKERY_ADDRESS || "Calle Principal #12-34, Tuluá, Valle del Cauca";
 const HUMAN_ATTENTION_SCHEDULE = process.env.HUMAN_ATTENTION_SCHEDULE || "7:00 a.m. a 7:00 p.m.";
