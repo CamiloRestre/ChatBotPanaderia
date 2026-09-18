@@ -31,11 +31,21 @@ app.post("/make", async (req, res) => {
   console.log("📥 Webhook de Make recibido:", JSON.stringify(payload));
 
   try {
-    // Extraer el mensaje del cliente
-    const message = payload.messages?.[0]?.text?.body;
-    const phone = payload.messages?.[0]?.from;
+    const messageSource =
+      payload.messages?.[0]?.text?.body ??
+      payload.message ??
+      payload.text ??
+      payload.body ??
+      payload?.data?.message ??
+      payload?.data?.text;
 
-    if (!message) {
+    const phone =
+      payload.messages?.[0]?.from ??
+      payload.phone ??
+      payload.from ??
+      payload?.data?.from;
+
+    if (!messageSource || !String(messageSource).trim()) {
       return res.status(400).json({ ok: false, error: "No hay mensaje" });
     }
 
@@ -43,13 +53,20 @@ app.post("/make", async (req, res) => {
       return res.status(400).json({ ok: false, error: "No hay número de remitente" });
     }
 
-    // Procesar el mensaje con la lógica de conversación
-    const respuesta = await handleIncomingMessage(phone, message);
+    // Procesar el mensaje con la lógica del bot.
+    // Este paso puede devolver un objeto de la API de Meta al enviar por WhatsApp,
+    // pero para Make necesitamos devolver siempre un texto plano.
+    const botResult = await handleIncomingMessage(phone, String(messageSource));
 
-    // Devolver la respuesta a Make
+    const respuesta = typeof botResult === "string"
+      ? botResult
+      : (botResult && typeof botResult === "object")
+        ? "Mensaje recibido y procesado correctamente."
+        : "Lo siento, no encontré información sobre eso.";
+
     return res.status(200).json({
       ok: true,
-      respuesta: respuesta || "Lo siento, no encontré información sobre eso."
+      respuesta
     });
   } catch (error) {
     console.error("❌ Error procesando el mensaje:", error);
