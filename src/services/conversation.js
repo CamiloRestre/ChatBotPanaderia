@@ -1,4 +1,4 @@
-// conversation.js
+﻿// conversation.js
 // Aquí vive la "lógica" del bot: qué responder según lo que escribe el
 // cliente y en qué paso de la conversación está.
 //
@@ -34,6 +34,11 @@ function getFreshState(phone, extra = {}) {
   return nextState;
 }
 
+async function sendTextAndReturn(phone, text) {
+  await sendWhatsAppMessage(phone, text);
+  return text;
+}
+
 export async function handleIncomingMessage(phone, message) {
   const rawText = message.trim();
   const text = normalize(rawText);
@@ -44,7 +49,7 @@ export async function handleIncomingMessage(phone, message) {
   }
 
   if (!text) {
-    return sendWhatsAppMessage(
+    return sendTextAndReturn(
       phone,
       "No alcancé a leer tu mensaje. ¿Me escribes nuevamente, por favor? 😊"
     );
@@ -52,7 +57,20 @@ export async function handleIncomingMessage(phone, message) {
 
   if (isMainMenuRequest(text)) {
     getFreshState(phone);
-    return sendMainMenu(phone);
+    return sendTextAndReturn(
+      phone,
+      `Hola 👋 Bienvenido/a a ${BAKERY_NAME}.
+
+Soy el asistente virtual y puedo ayudarte con:
+
+1. Ver la carta
+2. Hacer un pedido
+3. Recomiéndame algo
+4. Horarios y ubicación
+5. Hablar con alguien del equipo
+
+Responde con el número de la opción que prefieras.`
+    );
   }
 
   if (
@@ -126,7 +144,7 @@ export async function handleIncomingMessage(phone, message) {
     case "ORDER_CONFIRMED":
     case "LEAD_REGISTERED": {
       getFreshState(phone);
-      return sendWhatsAppMessage(
+      return sendTextAndReturn(
         phone,
         "Ya quedó registrado ✅ Si deseas hacer otro pedido, escribe *menu*."
       );
@@ -143,7 +161,7 @@ export async function handleIncomingMessage(phone, message) {
 // ---------------------------------------------------------------------------
 
 function sendMainMenu(phone) {
-  return sendWhatsAppMessage(
+  return sendTextAndReturn(
     phone,
     `Hola 👋 Bienvenido/a a ${BAKERY_NAME}.
 
@@ -181,7 +199,7 @@ async function handleMainMenuStep(phone, text, rawText, state) {
   }
 
   if (text === "4" || text.includes("horario") || text.includes("ubicacion") || text.includes("direccion")) {
-    return sendWhatsAppMessage(
+    return sendTextAndReturn(
       phone,
       `📍 Estamos en: ${BAKERY_ADDRESS}
 
@@ -206,7 +224,7 @@ Escribe *menu* para ver las opciones de nuevo.`
     return sendAiHelpOrFallback(phone, text, state, "PRODUCT_FOUND");
   }
 
-  return sendWhatsAppMessage(
+  return sendTextAndReturn(
     phone,
     `Te entiendo 😊 Para ayudarte mejor, elige una opción:
 
@@ -233,14 +251,14 @@ async function sendCarta(phone, state) {
     );
   } else {
     const menuText = buildMenuText();
-    await sendWhatsAppMessage(phone, menuText);
+    await sendTextAndReturn(phone, menuText);
   }
 
   state.step = "PRODUCT_FOUND";
   state.waitingForProductName = true;
   states.set(phone, state);
 
-  return sendWhatsAppMessage(
+  return sendTextAndReturn(
     phone,
     "Cuando veas algo que te guste, escríbeme el nombre para agregarlo a tu pedido 😊"
   );
@@ -265,7 +283,7 @@ function askProductName(phone, state, message) {
   state.waitingForProductName = true;
   states.set(phone, state);
 
-  return sendWhatsAppMessage(
+  return sendTextAndReturn(
     phone,
     `${message}
 
@@ -282,7 +300,7 @@ function offerProductHelp(phone, state) {
   state.waitingForProductName = true;
   states.set(phone, state);
 
-  return sendWhatsAppMessage(
+  return sendTextAndReturn(
     phone,
     `No hay problema 😊 Puedes elegir una de estas opciones:
 
@@ -302,7 +320,7 @@ async function sendAiHelpOrFallback(phone, text, state, nextStep) {
   states.set(phone, state);
 
   if (aiResponse) {
-    return sendWhatsAppMessage(
+    return sendTextAndReturn(
       phone,
       `${aiResponse}
 
@@ -316,7 +334,7 @@ También puedes responder:
     );
   }
 
-  return sendWhatsAppMessage(
+  return sendTextAndReturn(
     phone,
     `Te ayudo con gusto 😊
 
@@ -369,7 +387,7 @@ async function handleProductFoundStep(phone, text, state) {
   const selectedIndex = Number(text);
 
   if (!Number.isInteger(selectedIndex) || selectedIndex < 1 || selectedIndex > state.foundProducts.length) {
-    return sendWhatsAppMessage(phone, "Por favor responde con el número del producto que quieres agregar 😊");
+    return sendTextAndReturn(phone, "Por favor responde con el número del producto que quieres agregar 😊");
   }
 
   const selectedProduct = state.foundProducts[selectedIndex - 1];
@@ -386,7 +404,7 @@ function sendProductSearchResults(phone, foundProducts) {
     .map((product, index) => `${index + 1}. ${product.name} — ${formatPrice(product.price)}\n${product.description}`)
     .join("\n\n");
 
-  return sendWhatsAppMessage(
+  return sendTextAndReturn(
     phone,
     `Encontré estas opciones relacionadas con tu búsqueda:
 
@@ -399,7 +417,7 @@ Responde con el número de la opción 😊`
 }
 
 function askForQuantityAfterProduct(phone, selectedProduct) {
-  return sendWhatsAppMessage(
+  return sendTextAndReturn(
     phone,
     `Excelente elección 🔥
 
@@ -414,7 +432,7 @@ function handleQuantityStep(phone, text, state) {
   const quantity = Number(text);
 
   if (!Number.isInteger(quantity) || quantity < 1) {
-    return sendWhatsAppMessage(phone, "Por favor dime cuántas unidades deseas. Ejemplo: 1, 2, 3...");
+    return sendTextAndReturn(phone, "Por favor dime cuántas unidades deseas. Ejemplo: 1, 2, 3...");
   }
 
   addProductToCart(state, state.selectedProduct, quantity);
@@ -433,7 +451,7 @@ function handleAddMoreStep(phone, text, state) {
     state.step = "ASK_CUSTOMER_NAME";
     states.set(phone, state);
 
-    return sendWhatsAppMessage(
+    return sendTextAndReturn(
       phone,
       `${buildCartSummary(state)}
 
@@ -441,7 +459,7 @@ Para dejar tu pedido registrado, ¿me regalas tu nombre, por favor?`
     );
   }
 
-  return sendWhatsAppMessage(phone, "¿Deseas agregar otro producto al pedido? Responde *sí* o *no* 😊");
+  return sendTextAndReturn(phone, "¿Deseas agregar otro producto al pedido? Responde *sí* o *no* 😊");
 }
 
 function addProductToCart(state, product, quantity) {
@@ -478,7 +496,7 @@ function calculateCartTotals(state) {
 function sendCartSummaryWithAddMoreQuestion(phone, state) {
   calculateCartTotals(state);
 
-  return sendWhatsAppMessage(
+  return sendTextAndReturn(
     phone,
     `${buildCartSummary(state)}
 
@@ -510,14 +528,14 @@ function handleCustomerNameStep(phone, rawText, state) {
   const name = rawText.trim();
 
   if (name.length < 2 || isInvalidText(name)) {
-    return sendWhatsAppMessage(phone, "Por favor escríbeme tu nombre. Ejemplo: Fabián 😊");
+    return sendTextAndReturn(phone, "Por favor escríbeme tu nombre. Ejemplo: Fabián 😊");
   }
 
   state.customerName = capitalizeWords(name);
   state.step = "ASK_DELIVERY_METHOD";
   states.set(phone, state);
 
-  return sendWhatsAppMessage(
+  return sendTextAndReturn(
     phone,
     `Gracias, ${state.customerName} 😊
 
@@ -532,7 +550,7 @@ function handleDeliveryMethodStep(phone, text, state) {
   const method = parseDeliveryMethod(text);
 
   if (!method) {
-    return sendWhatsAppMessage(
+    return sendTextAndReturn(
       phone,
       `Por favor elige una opción válida:
 
@@ -547,7 +565,7 @@ function handleDeliveryMethodStep(phone, text, state) {
     state.step = "ASK_ADDRESS";
     states.set(phone, state);
 
-    return sendWhatsAppMessage(
+    return sendTextAndReturn(
       phone,
       "Perfecto 😊 Dime la dirección completa y el barrio para el domicilio. Ejemplo: Calle 10 # 20-30, barrio Centro."
     );
@@ -563,7 +581,7 @@ function handleAddressStep(phone, rawText, state) {
   const address = rawText.trim();
 
   if (address.length < 5 || isInvalidText(address)) {
-    return sendWhatsAppMessage(
+    return sendTextAndReturn(
       phone,
       "Por favor escríbeme una dirección más completa. Ejemplo: Calle 10 # 20-30, barrio Centro 😊"
     );
@@ -577,7 +595,7 @@ function handleAddressStep(phone, rawText, state) {
 }
 
 function sendPaymentQuestion(phone) {
-  return sendWhatsAppMessage(
+  return sendTextAndReturn(
     phone,
     `¿Qué método de pago prefieres?
 
@@ -590,7 +608,7 @@ async function handlePaymentMethodStep(phone, text, state) {
   const paymentMethod = parsePaymentMethod(text);
 
   if (!paymentMethod) {
-    return sendWhatsAppMessage(
+    return sendTextAndReturn(
       phone,
       `Elige una opción válida:
 
@@ -634,7 +652,7 @@ async function handlePaymentMethodStep(phone, text, state) {
       : `Entrega: Recoger en ${BAKERY_NAME} (${BAKERY_ADDRESS})`;
 
   if (paymentMethod === "transferencia") {
-    return sendWhatsAppMessage(
+    return sendTextAndReturn(
       phone,
       `Listo, ${state.customerName} ✅ Tu pedido quedó registrado:
 
@@ -653,7 +671,7 @@ Gracias por preferir a ${BAKERY_NAME} 🥐`
     );
   }
 
-  return sendWhatsAppMessage(
+  return sendTextAndReturn(
     phone,
     `Listo, ${state.customerName} ✅ Tu pedido quedó registrado:
 
@@ -671,7 +689,7 @@ Gracias por preferir a ${BAKERY_NAME} 🥐`
 // ---------------------------------------------------------------------------
 
 function sendRecoCategoryQuestion(phone) {
-  return sendWhatsAppMessage(
+  return sendTextAndReturn(
     phone,
     `¿Qué se te antoja hoy? 😊
 
@@ -687,7 +705,7 @@ function handleRecoCategoryStep(phone, text, state) {
   const category = parseRecoCategory(text);
 
   if (!category) {
-    return sendWhatsAppMessage(
+    return sendTextAndReturn(
       phone,
       `Elige una opción válida:
 
@@ -703,7 +721,7 @@ function handleRecoCategoryStep(phone, text, state) {
   state.step = "ASK_RECO_MOOD";
   states.set(phone, state);
 
-  return sendWhatsAppMessage(
+  return sendTextAndReturn(
     phone,
     `¿Para qué ocasión es?
 
@@ -718,7 +736,7 @@ function handleRecoMoodStep(phone, text, state) {
   const mood = parseRecoMood(text);
 
   if (!mood) {
-    return sendWhatsAppMessage(
+    return sendTextAndReturn(
       phone,
       `Elige una opción válida:
 
@@ -741,7 +759,7 @@ function handleRecoMoodStep(phone, text, state) {
     .map((product, index) => `${index + 1}. ${product.name} — ${formatPrice(product.price)}\n${product.description}`)
     .join("\n\n");
 
-  return sendWhatsAppMessage(
+  return sendTextAndReturn(
     phone,
     `Según lo que me cuentas, esto te puede gustar:
 
@@ -757,7 +775,7 @@ function handleRecommendationSelectionStep(phone, text, state) {
   const selectedIndex = Number(text);
 
   if (!Number.isInteger(selectedIndex) || selectedIndex < 1 || selectedIndex > state.recommendedProducts.length) {
-    return sendWhatsAppMessage(phone, "Por favor responde con el número de la opción que quieres agregar 😊");
+    return sendTextAndReturn(phone, "Por favor responde con el número de la opción que quieres agregar 😊");
   }
 
   const selectedProduct = state.recommendedProducts[selectedIndex - 1];
@@ -835,7 +853,7 @@ function parseRecoMood(text) {
 function handleHumanHandoff(phone) {
   states.set(phone, { step: "ASK_LEAD_NAME" });
 
-  return sendWhatsAppMessage(
+  return sendTextAndReturn(
     phone,
     `Claro 😊 Puedo dejar tu solicitud registrada para que alguien del equipo te escriba.
 
@@ -849,14 +867,14 @@ function handleLeadNameStep(phone, rawText, state) {
   const name = rawText.trim();
 
   if (name.length < 2) {
-    return sendWhatsAppMessage(phone, "¿Me regalas tu nombre, por favor? 😊");
+    return sendTextAndReturn(phone, "¿Me regalas tu nombre, por favor? 😊");
   }
 
   state.customerName = capitalizeWords(name);
   state.step = "ASK_LEAD_NEED";
   states.set(phone, state);
 
-  return sendWhatsAppMessage(phone, `Gracias, ${state.customerName}. ¿En qué te podemos ayudar?`);
+  return sendTextAndReturn(phone, `Gracias, ${state.customerName}. ¿En qué te podemos ayudar?`);
 }
 
 async function handleLeadNeedStep(phone, rawText, state) {
@@ -876,7 +894,7 @@ async function handleLeadNeedStep(phone, rawText, state) {
 
   await notifyMake("solicitud_atencion", leadPayload);
 
-  return sendWhatsAppMessage(
+  return sendTextAndReturn(
     phone,
     `Gracias, ${state.customerName} ✅ Dejamos tu solicitud registrada:
 

@@ -24,17 +24,66 @@ app.get("/", (req, res) => {
 app.get("/health", (_req, res) => {
   res.status(200).send("OK");
 });
-
+//prueba
 // Endpoint para webhooks externos de Make (por ejemplo, Google Sheets, Telegram, CRM, etc.)
-app.post("/make", (req, res) => {
+app.post("/make", async (req, res) => {
   const payload = req.body || {};
   console.log("📥 Webhook de Make recibido:", JSON.stringify(payload));
 
-  return res.status(200).json({
-    ok: true,
-    message: "Webhook de Make recibido correctamente",
-    receivedAt: new Date().toISOString()
-  });
+  try {
+    const messageSource =
+      payload.messages?.[0]?.text?.body ??
+      payload.message ??
+      payload.text ??
+      payload.body ??
+      payload?.data?.message ??
+      payload?.data?.text;
+
+    const phone =
+      payload.messages?.[0]?.from ??
+      payload.phone ??
+      payload.from ??
+      payload?.data?.from;
+
+    if (!messageSource || !String(messageSource).trim()) {
+      return res.status(200).json({
+        ok: false,
+        error: "No hay mensaje",
+        respuesta: "No recibí ningún mensaje de texto para procesar."
+      });
+    }
+
+    if (!phone) {
+      return res.status(200).json({
+        ok: false,
+        error: "No hay número de remitente",
+        respuesta: "No pude identificar el número del remitente."
+      });
+    }
+
+    // Procesar el mensaje con la lógica del bot.
+    // Este paso puede devolver un objeto de la API de Meta al enviar por WhatsApp,
+    // pero para Make necesitamos devolver siempre un texto plano.
+    const botResult = await handleIncomingMessage(phone, String(messageSource));
+
+    const respuesta = typeof botResult === "string"
+      ? botResult
+      : (botResult && typeof botResult === "object")
+        ? "Mensaje recibido y procesado correctamente."
+        : "Lo siento, no encontré información sobre eso.";
+
+    return res.status(200).json({
+      ok: true,
+      respuesta
+    });
+  } catch (error) {
+    console.error("❌ Error procesando el mensaje:", error);
+    return res.status(200).json({
+      ok: false,
+      error: "Error interno",
+      respuesta: "Hubo un error procesando tu mensaje. Intenta de nuevo."
+    });
+  }
 });
 
 // Endpoint para integraciones o callbacks de Render.
