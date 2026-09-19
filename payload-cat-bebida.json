@@ -1,0 +1,8 @@
+{
+  "entry": [{"changes": [{"value": {"messages": [{
+    "from": "573175325038", "type": "interactive", "interactive": {
+      "type": "list_reply",
+      "list_reply": {"id": "cat_bebida", "title": "Bebidas"}
+    }
+  }]}}]}]
+}

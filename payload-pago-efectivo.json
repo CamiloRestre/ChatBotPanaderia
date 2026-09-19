@@ -1,0 +1,16 @@
+{
+  "entry": [{
+    "changes": [{
+      "value": {
+        "messages": [{
+          "from": "573175325038",
+          "type": "interactive",
+          "interactive": {
+            "type": "button_reply",
+            "button_reply": { "id": "pay_cash", "title": "Efectivo" }
+          }
+        }]
+      }
+    }]
+  }]
+}

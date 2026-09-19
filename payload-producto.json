@@ -1,0 +1,19 @@
+{
+  "entry": [{
+    "changes": [{
+      "value": {
+        "messages": [{
+          "from": "573175325038",
+          "type": "interactive",
+          "interactive": {
+            "type": "list_reply",
+            "list_reply": {
+              "id": "prod_1",
+              "title": "Pan Frances"
+            }
+          }
+        }]
+      }
+    }]
+  }]
+}
