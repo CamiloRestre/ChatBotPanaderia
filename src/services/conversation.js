@@ -1,31 +1,274 @@
 ﻿// conversation.js
-// Aquí vive la "lógica" del bot: qué responder según lo que escribe el
-// cliente y en qué paso de la conversación está.
-//
-// Esta es la BASE DE CONOCIMIENTOS de flujo: los textos fijos (saludo, menú,
-// horarios, etc.) están escritos directamente aquí. Los productos vienen de
-// products.js. Cuando el mensaje del cliente no calza con nada de esto,
-// se usa ai.js (Gemini) como respaldo.
+// Lógica completa del bot con flujo de domiciliarios, botones y comando "atrás".
 
-import { sendWhatsAppMessage, sendWhatsAppDocument } from "../config/whatsapp.js";
+import {
+  sendWhatsAppMessage,
+  sendWhatsAppDocument,
+  sendWhatsAppList,
+  sendWhatsAppButtons
+} from "../config/whatsapp.js";
 import { products, formatPrice, CATEGORY_LABELS } from "../data/products.js";
 import { getAiSalesResponse } from "./ai.js";
 import { notifyMake } from "./notify.js";
 
-// Guarda en memoria en qué paso de la conversación va cada cliente.
-// (Se reinicia si el servidor se reinicia; para producción real se podría
-// mover a una base de datos, pero para este proyecto es suficiente).
 const states = new Map();
 
 const BAKERY_NAME = process.env.BAKERY_NAME || "Panadería Molinos";
 const BAKERY_ADDRESS =
   process.env.BAKERY_ADDRESS || "Calle Principal #12-34, Tuluá, Valle del Cauca";
-const HUMAN_ATTENTION_SCHEDULE = process.env.HUMAN_ATTENTION_SCHEDULE || "7:00 a.m. a 7:00 p.m.";
+const HUMAN_ATTENTION_SCHEDULE =
+  process.env.HUMAN_ATTENTION_SCHEDULE || "7:00 a.m. a 7:00 p.m.";
 
 const PAYMENT_INFO = {
   bank: process.env.PAYMENT_BANK || "Nequi",
   accountNumber: process.env.PAYMENT_ACCOUNT_NUMBER || "3000000000",
   holderName: process.env.PAYMENT_HOLDER_NAME || "Nombre del Titular"
+};
+
+const GREETINGS = [
+  "hola", "ola", "hoal", "hloa", "holaa", "holaaa", "hoola", "hol", "aloha",
+  "buenas", "bunas", "buens", "wenas", "wenass", "buenos dias", "buenos d",
+  "buen dia", "buendia", "buenas tardes", "buenas tades", "buenas tardess",
+  "buenas noches", "buenas noch", "hey", "hi", "hello", "que tal", "q tal",
+  "qtal", "k tal", "saludos", "saludo", "buenos", "buenas y santas", "quiubo",
+  "quihubo", "quiubole", "epa", "epale", "que mas", "que hubo", "holi", "holis"
+];
+
+const MENU_COMMANDS = [
+  "menu", "menú", "mnue", "meu", "men", "mnu", "mwnu", "menu principal",
+  "inicio", "empezar", "empezemos", "comenzar", "reiniciar", "reset", "info",
+  "informacion", "información", "ayuda", "help", "opciones", "opciones principales",
+  "que puedo hacer", "qué puedo hacer", "mostrar menu", "ver menu", "ver opciones"
+];
+
+const BACK_COMMANDS = [
+  "atras", "atrás", "atraz", "atrass", "atrazz", "volver", "regresar", "regresa",
+  "back", "anterior", "previo", "before", "regresar atras", "volver atras", "vover", "bolver"
+];
+
+const YES_WORDS = [
+  "si", "sí", "s", "yes", "yep", "yap", "sep", "sipi", "claro", "claroo",
+  "ok", "okey", "okay", "okis", "dale", "listo", "afirmativo", "correcto",
+  "acepto", "aceptar", "confirmo", "confirmar", "por supuesto", "obvio",
+  "obviamente", "si señor", "si claro", "asi es", "así es", "otro", "agregar"
+];
+
+const NO_WORDS = [
+  "no", "n", "nop", "nope", "nel", "neles", "para nada", "nunca", "negativo",
+  "cancelar", "cancela", "saltar", "omitir", "luego", "despues", "después",
+  "ahorita no", "no gracias", "no por ahora", "continuar", "finalizar"
+];
+
+const HUMAN_KEYWORDS = [
+  "asesor", "asesora", "humano", "humana", "persona", "agente", "trabajador",
+  "hablar con alguien", "hablar con persona", "hablar con humano", "atencion personalizada",
+  "atencion humana", "reclamo", "queja", "quejas", "soporte", "ayuda humana",
+  "quiero hablar con alguien", "necesito hablar", "me pueden llamar", "necesito ayuda",
+  "urge", "urgente"
+];
+
+const ORDER_KEYWORDS = [
+  "pedido", "pedir", "comprar", "ordenar", "orden", "quiero pedir", "hacer pedido",
+  "hacer un pedido", "comprar algo", "quiero comprar", "necesito comprar", "deseo pedir",
+  "voy a pedir", "adquirir"
+];
+
+const CARD_KEYWORDS = [
+  "carta", "catalogo", "menu de productos", "que tienen", "que venden", "productos",
+  "ver productos", "ver carta", "ver catalogo", "mostrar productos", "que hay",
+  "que ofrecen", "lista de productos", "precios"
+];
+
+const HOURS_KEYWORDS = [
+  "horario", "horarios", "hora", "a que hora", "cuando abren", "cuando cierran",
+  "estan abiertos", "abren hoy", "atienden hoy", "horario de atencion"
+];
+
+const LOCATION_KEYWORDS = [
+  "ubicacion", "donde estan", "donde queda", "direccion", "como llego",
+  "donde los encuentro"
+];
+
+const RECOMMEND_KEYWORDS = [
+  "recomiendame", "recomienda", "recomiendame algo", "sugerencia", "sugerencias",
+  "sugerir", "que me recomiendas", "que me sugieres", "no se que pedir",
+  "que me aconsejas", "estoy indeciso", "no me decido"
+];
+
+const NEGATIVE_KNOWLEDGE = ["no tengo", "no manejamos", "no vendemos", "no hacemos", "no ofrecemos"];
+
+const ADVANCED_FLOW_STEPS = new Set([
+  "CATEGORY_SELECTED", "PRODUCT_LIST_SHOWN", "PRODUCT_FOUND", "ASK_QUANTITY", "ASK_NOTE",
+  "ASK_NOTE_TEXT", "ASK_ADD_MORE", "ASK_CUSTOMER_NAME", "ASK_PHONE", "ASK_ADDRESS",
+  "ASK_NEIGHBORHOOD", "ASK_PAYMENT_METHOD", "ASK_RECO_CATEGORY", "ASK_RECO_MOOD",
+  "SHOW_RECOMMENDATIONS", "ASK_LEAD_NAME", "ASK_LEAD_NEED"
+]);
+
+function normalize(text) {
+  return String(text || "")
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[¿?¡!.,;:()\[\]{}"']/g, "")
+    .replace(/\s+/g, " ");
+}
+
+function capitalizeWords(text) {
+  return text
+    .trim()
+    .toLowerCase()
+    .split(" ")
+    .filter(Boolean)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function isInvalidText(value) {
+  const normalized = normalize(value);
+  const invalidWords = ["1", "2", "transferencia", "contraentrega", "pago", "domicilio", "recoger"];
+  return invalidWords.includes(normalized);
+}
+
+function levenshtein(a, b) {
+  const previous = Array.from({ length: b.length + 1 }, (_, index) => index);
+
+  for (let i = 1; i <= a.length; i += 1) {
+    const current = [i];
+
+    for (let j = 1; j <= b.length; j += 1) {
+      current[j] = a[i - 1] === b[j - 1]
+        ? previous[j - 1]
+        : Math.min(previous[j - 1] + 1, current[j - 1] + 1, previous[j] + 1);
+    }
+
+    previous.splice(0, previous.length, ...current);
+  }
+
+  return previous[b.length];
+}
+
+function isSimilar(input, word, threshold = 0.8) {
+  if (!input || !word) return false;
+
+  const normalizedInput = normalize(input);
+  const normalizedWord = normalize(word);
+  const distance = levenshtein(normalizedInput, normalizedWord);
+  const score = 1 - distance / Math.max(normalizedInput.length, normalizedWord.length);
+
+  return score >= threshold;
+}
+
+function findBestMatch(input, wordList) {
+  if (!input) return null;
+
+  const normalizedInput = normalize(input);
+  let bestMatch = null;
+
+  for (const word of wordList) {
+    const normalizedWord = normalize(word);
+
+    if (normalizedInput === normalizedWord) {
+      return { word, exact: true, score: 1 };
+    }
+
+    const distance = levenshtein(normalizedInput, normalizedWord);
+    const score = 1 - distance / Math.max(normalizedInput.length, normalizedWord.length);
+
+    if (!bestMatch || score > bestMatch.score) {
+      bestMatch = { word, exact: false, score };
+    }
+  }
+
+  return bestMatch;
+}
+
+function isGreetingLike(text) {
+  const match = findBestMatch(text, GREETINGS);
+  return Boolean(match && match.score >= 0.8);
+}
+
+function isMenuCommand(text) {
+  const match = findBestMatch(text, MENU_COMMANDS);
+  return Boolean(match && match.score >= 0.8);
+}
+
+function isBackCommand(text) {
+  const match = findBestMatch(text, BACK_COMMANDS);
+  return Boolean(match && match.score >= 0.85);
+}
+
+function isYes(text) {
+  const match = findBestMatch(text, YES_WORDS);
+  return Boolean(match && match.score >= 0.9);
+}
+
+function isNo(text) {
+  const match = findBestMatch(text, NO_WORDS);
+  return Boolean(match && match.score >= 0.9);
+}
+
+function isHumanRequest(text) {
+  const normalizedText = normalize(text);
+  if (HUMAN_KEYWORDS.some((keyword) => normalizedText.includes(normalize(keyword)))) {
+    return true;
+  }
+
+  const match = findBestMatch(text, HUMAN_KEYWORDS);
+  return Boolean(match && match.score >= 0.85);
+}
+
+function suggestCorrection(text) {
+  if (!text || text.length < 2) return null;
+
+  if (normalize(text) === "hilo") return "Hola";
+
+  const commands = [
+    ...GREETINGS.map((word) => ({ text: word, label: word })),
+    ...MENU_COMMANDS.slice(0, 3).map((word) => ({ text: word, label: word }))
+  ];
+  let best = null;
+
+  for (const command of commands) {
+    const input = normalize(text);
+    const target = normalize(command.text);
+    const distance = levenshtein(input, target);
+    const score = 1 - distance / Math.max(input.length, target.length);
+
+    if (!best || score > best.score) {
+      best = { label: command.label, score };
+    }
+  }
+
+  if (!best || best.score < 0.55 || best.score >= 0.8) return null;
+
+  return best.label.charAt(0).toUpperCase() + best.label.slice(1);
+}
+
+function matchesKeyword(text, keywords) {
+  const normalizedText = normalize(text);
+  return keywords.some((keyword) => normalizedText.includes(normalize(keyword)));
+}
+
+function isExactCommand(text, words) {
+  const normalizedText = normalize(text);
+  return words.some((word) => normalizedText === normalize(word));
+}
+
+// Historial de pasos para el comando "atrás"
+const STEPS_HISTORY = {
+  MAIN_MENU: null,
+  CATEGORY_SELECTED: "MAIN_MENU",
+  PRODUCT_LIST_SHOWN: "CATEGORY_SELECTED",
+  ASK_QUANTITY: "PRODUCT_LIST_SHOWN",
+  ASK_NOTE: "ASK_QUANTITY",
+  ASK_ADD_MORE: "ASK_NOTE",
+  ASK_CUSTOMER_NAME: "ASK_ADD_MORE",
+  ASK_PHONE: "ASK_CUSTOMER_NAME",
+  ASK_ADDRESS: "ASK_PHONE",
+  ASK_NEIGHBORHOOD: "ASK_ADDRESS",
+  ASK_PAYMENT_METHOD: "ASK_NEIGHBORHOOD",
+  CONFIRM_CANCEL_ORDER: null
 };
 
 function getFreshState(phone, extra = {}) {
@@ -39,8 +282,8 @@ async function sendTextAndReturn(phone, text) {
   return text;
 }
 
-export async function handleIncomingMessage(phone, message) {
-  const rawText = message.trim();
+export async function handleIncomingMessage(phone, message, messageType = "text") {
+  const rawText = String(message || "").trim();
   const text = normalize(rawText);
 
   if (!isBotAllowedToRespond()) {
@@ -48,52 +291,105 @@ export async function handleIncomingMessage(phone, message) {
     return;
   }
 
-  if (!text) {
+  if (!text && messageType === "text") {
     return sendTextAndReturn(
       phone,
       "No alcancé a leer tu mensaje. ¿Me escribes nuevamente, por favor? 😊"
     );
   }
 
-  if (isMainMenuRequest(text)) {
-    getFreshState(phone);
-    return sendTextAndReturn(
-      phone,
-      `Hola 👋 Bienvenido/a a ${BAKERY_NAME}.
-
-Soy el asistente virtual y puedo ayudarte con:
-
-1. Ver la carta
-2. Hacer un pedido
-3. Recomiéndame algo
-4. Horarios y ubicación
-5. Hablar con alguien del equipo
-
-Responde con el número de la opción que prefieras.`
-    );
-  }
-
-  if (
-    text.includes("asesor") ||
-    text.includes("humano") ||
-    text.includes("persona") ||
-    text.includes("hablar con alguien")
-  ) {
-    return handleHumanHandoff(phone);
+  if (messageType !== "text") {
+    return sendNonTextResponse(phone, messageType);
   }
 
   const state = states.get(phone);
+
+  if (state?.step === "CONFIRM_CANCEL_ORDER") {
+    return handleCancelConfirmationStep(phone, text, state);
+  }
+
+  if (isBackCommand(text)) {
+    return handleBack(phone);
+  }
+
+  if (state && ADVANCED_FLOW_STEPS.has(state.step) && (isGreetingLike(text) || isMenuCommand(text))) {
+    state.previousStep = state.step;
+    state.step = "CONFIRM_CANCEL_ORDER";
+    states.set(phone, state);
+    return sendTextAndReturn(
+      phone,
+      "Estás en medio de un pedido. ¿Quieres cancelarlo y volver al menú?\n\nResponde *sí* para cancelar o *no* para continuar."
+    );
+  }
+
+  if (isExactCommand(text, [...GREETINGS, ...MENU_COMMANDS])) {
+    getFreshState(phone);
+    return sendMainMenu(phone);
+  }
+
+  if (isExactCommand(text, HUMAN_KEYWORDS) || isHumanRequest(text)) {
+    return handleHumanHandoff(phone);
+  }
+
+  const suggestion = suggestCorrection(text);
+
+  if (!state || state.step === "MAIN_MENU") {
+    if (suggestion) {
+      states.set(phone, {
+        step: "CONFIRM_SUGGESTION",
+        cart: state?.cart || [],
+        history: [],
+        suggestion
+      });
+      return sendTextAndReturn(
+        phone,
+        `No estoy seguro de haber entendido 🤔\n\n¿Quisiste decir *${suggestion}*?\n\nResponde *sí* para continuar o escribe *menu* para ver las opciones.`
+      );
+    }
+  }
 
   if (!state) {
     const foundProducts = searchProducts(text);
 
     if (foundProducts.length > 0) {
-      states.set(phone, { step: "PRODUCT_FOUND", foundProducts, cart: [] });
+      states.set(phone, {
+        step: "PRODUCT_FOUND",
+        foundProducts,
+        cart: [],
+        history: []
+      });
       return sendProductSearchResults(phone, foundProducts);
     }
 
+    if (matchesKeyword(text, CARD_KEYWORDS)) {
+      const freshState = getFreshState(phone);
+      return sendCarta(phone, freshState);
+    }
+
+    if (matchesKeyword(text, ORDER_KEYWORDS)) {
+      const freshState = getFreshState(phone);
+      return askProductName(phone, freshState, "Claro 😊 ¿Qué te gustaría pedir? Escríbeme el nombre del producto, por ejemplo: Croissant, Torta de chocolate, Café.");
+    }
+
+    if (matchesKeyword(text, RECOMMEND_KEYWORDS)) {
+      const freshState = getFreshState(phone);
+      freshState.step = "ASK_RECO_CATEGORY";
+      states.set(phone, freshState);
+      return sendRecoCategoryQuestion(phone);
+    }
+
+    if (matchesKeyword(text, HOURS_KEYWORDS) || matchesKeyword(text, LOCATION_KEYWORDS)) {
+      const freshState = getFreshState(phone);
+      return handleMainMenuStep(phone, text, rawText, freshState);
+    }
+
+    if (matchesKeyword(text, NEGATIVE_KNOWLEDGE)) {
+      getFreshState(phone);
+      return sendTextAndReturn(phone, "Por ahora no manejamos esa opción. Escribe *menu* para ver lo que sí tenemos disponible.");
+    }
+
     if (shouldUseAi(text)) {
-      const newState = { step: "PRODUCT_FOUND", cart: [] };
+      const newState = { step: "PRODUCT_FOUND", cart: [], history: [] };
       return sendAiHelpOrFallback(phone, text, newState, "PRODUCT_FOUND");
     }
 
@@ -102,8 +398,17 @@ Responde con el número de la opción que prefieras.`
   }
 
   switch (state.step) {
+    case "CONFIRM_SUGGESTION":
+      return handleConfirmSuggestionStep(phone, text, state);
+
     case "MAIN_MENU":
       return handleMainMenuStep(phone, text, rawText, state);
+
+    case "CATEGORY_SELECTED":
+      return handleCategorySelectedStep(phone, text, state);
+
+    case "PRODUCT_LIST_SHOWN":
+      return handleProductSelectedStep(phone, text, state);
 
     case "PRODUCT_FOUND":
       return handleProductFoundStep(phone, text, state);
@@ -111,17 +416,26 @@ Responde con el número de la opción que prefieras.`
     case "ASK_QUANTITY":
       return handleQuantityStep(phone, text, state);
 
+    case "ASK_NOTE":
+      return handleNoteStep(phone, text, rawText, state);
+
+    case "ASK_NOTE_TEXT":
+      return handleNoteTextStep(phone, rawText, state);
+
     case "ASK_ADD_MORE":
       return handleAddMoreStep(phone, text, state);
 
     case "ASK_CUSTOMER_NAME":
       return handleCustomerNameStep(phone, rawText, state);
 
-    case "ASK_DELIVERY_METHOD":
-      return handleDeliveryMethodStep(phone, text, state);
+    case "ASK_PHONE":
+      return handlePhoneStep(phone, text, rawText, state);
 
     case "ASK_ADDRESS":
       return handleAddressStep(phone, rawText, state);
+
+    case "ASK_NEIGHBORHOOD":
+      return handleNeighborhoodStep(phone, rawText, state);
 
     case "ASK_PAYMENT_METHOD":
       return handlePaymentMethodStep(phone, text, state);
@@ -156,33 +470,196 @@ Responde con el número de la opción que prefieras.`
   }
 }
 
+async function handleConfirmSuggestionStep(phone, text, state) {
+  if (isYes(text)) {
+    getFreshState(phone);
+    return sendMainMenu(phone);
+  }
+
+  if (isNo(text)) {
+    getFreshState(phone);
+    return sendTextAndReturn(
+      phone,
+      "No hay problema 😊 Escribe *menu* para ver las opciones."
+    );
+  }
+
+  getFreshState(phone);
+  return sendMainMenu(phone);
+}
+
+async function handleCancelConfirmationStep(phone, text, state) {
+  if (isYes(text)) {
+    getFreshState(phone);
+    return sendMainMenu(phone);
+  }
+
+  if (isNo(text)) {
+    const previousStep = state.previousStep || "MAIN_MENU";
+    state.step = previousStep;
+    delete state.previousStep;
+    states.set(phone, state);
+    return resendStepPrompt(phone, state);
+  }
+
+  return sendTextAndReturn(phone, "Responde *sí* para cancelar el pedido o *no* para continuar.");
+}
+
+function resendStepPrompt(phone, state) {
+  switch (state.step) {
+    case "CATEGORY_SELECTED":
+      return sendCarta(phone, state);
+    case "PRODUCT_LIST_SHOWN":
+      return state.currentCategory
+        ? showProductListByCategory(phone, state, state.currentCategory)
+        : sendCarta(phone, state);
+    case "PRODUCT_FOUND":
+      return sendTextAndReturn(phone, "Escríbeme el nombre del producto que deseas buscar, o escribe *menu* para ver las opciones.");
+    case "ASK_QUANTITY":
+      return sendTextAndReturn(phone, `¿Cuántas unidades deseas agregar de *${state.selectedProduct.name}*?`);
+    case "ASK_NOTE":
+      return sendTextAndReturn(phone, "¿Deseas agregar una nota al producto?");
+    case "ASK_NOTE_TEXT":
+      return sendTextAndReturn(phone, `Escribe la nota o indicación especial para *${state.selectedProduct.name}*.`);
+    case "ASK_ADD_MORE":
+      return sendAddMoreButtons(phone, state);
+    case "ASK_CUSTOMER_NAME":
+      return sendTextAndReturn(phone, "¿Me regalas tu nombre completo, por favor?");
+    case "ASK_PHONE":
+      return sendTextAndReturn(phone, "¿A qué número te podemos llamar?");
+    case "ASK_ADDRESS":
+      return sendTextAndReturn(phone, "¿Cuál es la dirección de entrega?");
+    case "ASK_NEIGHBORHOOD":
+      return sendTextAndReturn(phone, "¿En qué barrio queda?");
+    case "ASK_PAYMENT_METHOD":
+      return sendPaymentQuestion(phone);
+    case "ASK_RECO_CATEGORY":
+      return sendRecoCategoryQuestion(phone);
+    case "ASK_RECO_MOOD":
+      return sendTextAndReturn(phone, "¿Para qué ocasión es?\n\n1. Antojo del día\n2. Cumpleaños o celebración\n3. Para compartir\n4. Lo más pedido");
+    default:
+      return sendMainMenu(phone);
+  }
+}
+
+function sendNonTextResponse(phone, messageType) {
+  const responses = {
+    image: "Recibí tu imagen 📷, pero solo proceso texto. ¿Me escribes lo que necesitas?",
+    audio: "Recibí tu audio 🎤, pero solo proceso texto. ¿Me escribes lo que necesitas?",
+    voice: "Recibí tu audio 🎤, pero solo proceso texto. ¿Me escribes lo que necesitas?",
+    sticker: "¡Bonito sticker! 😄 Solo proceso texto. ¿En qué te ayudo?",
+    location: "Recibí tu ubicación 📍. Si quieres pedir a domicilio, escribe *menu*.",
+    video: "Recibí tu video 🎥, pero solo proceso texto.",
+    document: "Recibí tu documento 📄, pero solo proceso texto."
+  };
+
+  return sendTextAndReturn(phone, responses[messageType] || "Recibí tu mensaje, pero solo proceso texto.");
+}
+
 // ---------------------------------------------------------------------------
-// MENÚ PRINCIPAL — esto es lo primero que ve el cliente al saludar
+// COMANDO "ATRÁS" — vuelve al paso anterior
+// ---------------------------------------------------------------------------
+async function handleBack(phone) {
+  const state = states.get(phone);
+
+  if (!state || state.step === "MAIN_MENU") {
+    return sendTextAndReturn(phone, "Ya estás en el menú principal. Escribe *menu* para ver las opciones.");
+  }
+
+  const previousStep = STEPS_HISTORY[state.step];
+
+  if (!previousStep) {
+    return sendTextAndReturn(phone, "No puedo retroceder más. Escribe *menu* para reiniciar.");
+  }
+
+  state.step = previousStep;
+  states.set(phone, state);
+
+  // Redirigir al paso anterior mandando el prompt correspondiente
+  switch (previousStep) {
+    case "MAIN_MENU":
+      return sendMainMenu(phone);
+
+    case "CATEGORY_SELECTED":
+      return sendCarta(phone, state);
+
+    case "PRODUCT_LIST_SHOWN":
+      if (state.currentCategory) {
+        return showProductListByCategory(phone, state, state.currentCategory);
+      }
+      return sendCarta(phone, state);
+
+    case "ASK_QUANTITY":
+      if (state.selectedProduct) {
+        return sendTextAndReturn(
+          phone,
+          `Volviste al paso anterior.\n\nProducto: *${state.selectedProduct.name}*\nPrecio: ${formatPrice(state.selectedProduct.price)}\n\n¿Cuántas unidades deseas agregar?`
+        );
+      }
+      return sendMainMenu(phone);
+
+    case "ASK_NOTE":
+      return sendTextAndReturn(phone, "¿Deseas agregar una nota al producto?");
+
+    case "ASK_ADD_MORE":
+      return sendTextAndReturn(
+        phone,
+        `${buildCartSummary(state)}\n\n¿Deseas agregar otro producto al pedido?`
+      );
+
+    case "ASK_CUSTOMER_NAME":
+      return sendTextAndReturn(phone, "¿Me regalas tu nombre, por favor?");
+
+    case "ASK_PHONE":
+      return sendTextAndReturn(phone, "¿A qué número te podemos llamar?");
+
+    case "ASK_ADDRESS":
+      return sendTextAndReturn(phone, "¿Cuál es la dirección de entrega?");
+
+    case "ASK_NEIGHBORHOOD":
+      return sendTextAndReturn(phone, "¿En qué barrio queda?");
+
+    case "ASK_PAYMENT_METHOD":
+      return sendPaymentQuestion(phone);
+
+    default:
+      return sendMainMenu(phone);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// MENÚ PRINCIPAL
 // ---------------------------------------------------------------------------
 
-function sendMainMenu(phone) {
-  return sendTextAndReturn(
+async function sendMainMenu(phone) {
+  await sendWhatsAppList(
     phone,
-    `Hola 👋 Bienvenido/a a ${BAKERY_NAME}.
-
-Soy el asistente virtual y puedo ayudarte con:
-
-1. Ver la carta
-2. Hacer un pedido
-3. Recomiéndame algo
-4. Horarios y ubicación
-5. Hablar con alguien del equipo
-
-Responde con el número de la opción que prefieras.`
+    "Soy el asistente virtual y puedo ayudarte con lo que necesites.",
+    "Ver opciones",
+    [
+      {
+        title: "Opciones principales",
+        rows: [
+          { id: "menu_ver_carta", title: "Ver la carta", description: "Revisa todos nuestros productos" },
+          { id: "menu_hacer_pedido", title: "Hacer un pedido", description: "Agrega productos al carrito" },
+          { id: "menu_recomendar", title: "Recomiéndame algo", description: "Sugerencias según tu antojo" },
+          { id: "menu_horarios", title: "Horarios y ubicación", description: "Dirección y horario de atención" },
+          { id: "menu_asesor", title: "Hablar con alguien", description: "Atención personalizada" }
+        ]
+      }
+    ],
+    `Hola 👋 Bienvenido/a a ${BAKERY_NAME}`
   );
+
+  return "menu principal enviado";
 }
 
 async function handleMainMenuStep(phone, text, rawText, state) {
-  if (text === "1" || text.includes("carta") || text.includes("menu") || text.includes("catalogo")) {
+  if (text === "menu_ver_carta") {
     return sendCarta(phone, state);
   }
 
-  if (text === "2" || text.includes("pedido") || text.includes("pedir") || text.includes("comprar")) {
+  if (text === "menu_hacer_pedido") {
     state.cart = [];
     return askProductName(
       phone,
@@ -191,32 +668,60 @@ async function handleMainMenuStep(phone, text, rawText, state) {
     );
   }
 
-  if (text === "3" || text.includes("recomien")) {
+  if (text === "menu_recomendar") {
     state.cart = [];
     state.step = "ASK_RECO_CATEGORY";
     states.set(phone, state);
     return sendRecoCategoryQuestion(phone);
   }
 
-  if (text === "4" || text.includes("horario") || text.includes("ubicacion") || text.includes("direccion")) {
+  if (text === "menu_horarios") {
     return sendTextAndReturn(
       phone,
-      `📍 Estamos en: ${BAKERY_ADDRESS}
-
-🕒 Horario de atención: ${HUMAN_ATTENTION_SCHEDULE}
-
-Escribe *menu* para ver las opciones de nuevo.`
+      `📍 Estamos en: ${BAKERY_ADDRESS}\n\n🕒 Horario de atención: ${HUMAN_ATTENTION_SCHEDULE}\n\nEscribe *menu* para ver las opciones de nuevo.`
     );
   }
 
-  if (text === "5" || text.includes("asesor") || text.includes("humano")) {
+  if (text === "menu_asesor") {
+    return handleHumanHandoff(phone);
+  }
+
+  if (text === "1" || matchesKeyword(text, CARD_KEYWORDS) || text.includes("menu")) {
+    return sendCarta(phone, state);
+  }
+
+  if (text === "2" || matchesKeyword(text, ORDER_KEYWORDS)) {
+    state.cart = [];
+    return askProductName(phone, state, "Claro 😊 ¿Qué te gustaría pedir? Escríbeme el nombre del producto, por ejemplo: Croissant, Torta de chocolate, Café.");
+  }
+
+  if (text === "3" || matchesKeyword(text, RECOMMEND_KEYWORDS)) {
+    state.cart = [];
+    state.step = "ASK_RECO_CATEGORY";
+    states.set(phone, state);
+    return sendRecoCategoryQuestion(phone);
+  }
+
+  if (text === "4" || matchesKeyword(text, HOURS_KEYWORDS) || matchesKeyword(text, LOCATION_KEYWORDS)) {
+    return sendTextAndReturn(
+      phone,
+      `📍 Estamos en: ${BAKERY_ADDRESS}\n\n🕒 Horario de atención: ${HUMAN_ATTENTION_SCHEDULE}\n\nEscribe *menu* para ver las opciones de nuevo.`
+    );
+  }
+
+  if (text === "5" || isHumanRequest(text)) {
     return handleHumanHandoff(phone);
   }
 
   const foundProducts = searchProducts(text);
 
   if (foundProducts.length > 0) {
-    states.set(phone, { step: "PRODUCT_FOUND", foundProducts, cart: state.cart || [] });
+    states.set(phone, {
+      step: "PRODUCT_FOUND",
+      foundProducts,
+      cart: state.cart || [],
+      history: []
+    });
     return sendProductSearchResults(phone, foundProducts);
   }
 
@@ -226,52 +731,118 @@ Escribe *menu* para ver las opciones de nuevo.`
 
   return sendTextAndReturn(
     phone,
-    `Te entiendo 😊 Para ayudarte mejor, elige una opción:
-
-1. Ver la carta
-2. Hacer un pedido
-3. Recomiéndame algo
-4. Horarios y ubicación
-5. Hablar con alguien del equipo`
+    `Te entiendo 😊 Para ayudarte mejor, escribe *menu* para ver las opciones.`
   );
 }
+
+
+// ---------------------------------------------------------------------------
+// CARTA COMO LISTA — Categorías → Productos
+// ---------------------------------------------------------------------------
 
 async function sendCarta(phone, state) {
   const mediaId = process.env.CATALOG_MEDIA_ID || "";
   const filename = process.env.CATALOG_FILE_NAME || `Carta ${BAKERY_NAME}.pdf`;
 
-  // Si configuras CATALOG_MEDIA_ID en .env, se envía un PDF ya subido a Meta.
-  // Si no, se arma automáticamente un texto con el catálogo (products.js).
   if (mediaId) {
-    await sendWhatsAppDocument(
-      phone,
-      mediaId,
-      filename,
-      "Aquí tienes nuestra carta actualizada 😊"
-    );
-  } else {
-    const menuText = buildMenuText();
-    await sendTextAndReturn(phone, menuText);
+    await sendWhatsAppDocument(phone, mediaId, filename, "Aquí tienes nuestra carta actualizada 😊");
+    state.step = "PRODUCT_FOUND";
+    state.waitingForProductName = true;
+    states.set(phone, state);
+    return sendTextAndReturn(phone, "Cuando veas algo que te guste, escríbeme el nombre para agregarlo a tu pedido 😊");
   }
 
-  state.step = "PRODUCT_FOUND";
-  state.waitingForProductName = true;
+  await sendWhatsAppList(
+    phone,
+    "Elige una categoría para ver los productos:",
+    "Ver categorías",
+    [
+      {
+        title: "Categorías",
+        rows: Object.keys(CATEGORY_LABELS).map((cat) => ({
+          id: `cat_${cat}`,
+          title: CATEGORY_LABELS[cat],
+          description: `Ver productos de ${CATEGORY_LABELS[cat]}`
+        }))
+      }
+    ],
+    "📋 Nuestra carta"
+  );
+
+  state.step = "CATEGORY_SELECTED";
+  state.cart = state.cart || [];
+  states.set(phone, state);
+
+  return "carta enviada como lista de categorías";
+}
+
+async function handleCategorySelectedStep(phone, text, state) {
+  const category = text.replace("cat_", "");
+
+  if (!CATEGORY_LABELS[category]) {
+    return sendTextAndReturn(phone, "Categoría no válida. Escribe *menu* para empezar de nuevo.");
+  }
+
+  return showProductListByCategory(phone, state, category);
+}
+
+async function showProductListByCategory(phone, state, category) {
+  const categoryProducts = products.filter((p) => p.available && p.category === category);
+
+  if (categoryProducts.length === 0) {
+    return sendTextAndReturn(phone, "No hay productos disponibles en esta categoría por ahora 😅");
+  }
+
+  await sendWhatsAppList(
+    phone,
+    `Estos son los productos de ${CATEGORY_LABELS[category]}:`,
+    "Ver productos",
+    [
+      {
+        title: CATEGORY_LABELS[category],
+        rows: categoryProducts.slice(0, 10).map((product) => ({
+          id: `prod_${product.id}`,
+          title: product.name.slice(0, 24),
+          description: formatPrice(product.price)
+        }))
+      }
+    ],
+    "📋 Productos disponibles"
+  );
+
+  state.step = "PRODUCT_LIST_SHOWN";
+  state.currentCategory = category;
+  states.set(phone, state);
+
+  return "lista de productos enviada";
+}
+
+async function handleProductSelectedStep(phone, text, state) {
+  const productId = Number(text.replace("prod_", ""));
+  const product = products.find((p) => p.id === productId);
+
+  if (!product) {
+    return sendTextAndReturn(phone, "No encontré ese producto 😅 Escribe *menu* para empezar de nuevo.");
+  }
+
+  state.selectedProduct = product;
+  state.step = "ASK_QUANTITY";
   states.set(phone, state);
 
   return sendTextAndReturn(
     phone,
-    "Cuando veas algo que te guste, escríbeme el nombre para agregarlo a tu pedido 😊"
+    `Seleccionaste: *${product.name}*\n${product.description}\nPrecio: ${formatPrice(product.price)}\n\n¿Cuántas unidades deseas agregar?\n\n_Escribe "atrás" para volver._`
   );
 }
+
+// ---------------------------------------------------------------------------
+// BÚSQUEDA Y SELECCIÓN DE PRODUCTO (flujo de texto)
+// ---------------------------------------------------------------------------
 
 function buildMenuText() {
   const sections = Object.keys(CATEGORY_LABELS).map((category) => {
     const items = products.filter((p) => p.available && p.category === category);
-
-    const lines = items
-      .map((product) => `• ${product.name} — ${formatPrice(product.price)}`)
-      .join("\n");
-
+    const lines = items.map((product) => `• ${product.name} — ${formatPrice(product.price)}`).join("\n");
     return `*${CATEGORY_LABELS[category]}*\n${lines}`;
   });
 
@@ -283,16 +854,7 @@ function askProductName(phone, state, message) {
   state.waitingForProductName = true;
   states.set(phone, state);
 
-  return sendTextAndReturn(
-    phone,
-    `${message}
-
-También puedes responder:
-
-1. Ver la carta
-2. Recomiéndame algo
-3. Hablar con alguien del equipo`
-  );
+  return sendTextAndReturn(phone, message);
 }
 
 function offerProductHelp(phone, state) {
@@ -300,20 +862,20 @@ function offerProductHelp(phone, state) {
   state.waitingForProductName = true;
   states.set(phone, state);
 
-  return sendTextAndReturn(
-    phone,
-    `No hay problema 😊 Puedes elegir una de estas opciones:
-
-1. Ver la carta
-2. Recomiéndame algo
-3. Hablar con alguien del equipo
-
-Responde con el número de la opción que prefieras.`
-  );
+  return sendTextAndReturn(phone, "No encontré ese producto 😅 Escribe el nombre de otro o escribe *menu* para reiniciar.");
 }
 
 async function sendAiHelpOrFallback(phone, text, state, nextStep) {
-  const aiResponse = await getAiSalesResponse(text);
+  let aiResponse = null;
+
+  try {
+    aiResponse = await Promise.race([
+      getAiSalesResponse(text),
+      new Promise((resolve) => setTimeout(() => resolve(null), 10000))
+    ]);
+  } catch (error) {
+    console.error("Error en el fallback de Gemini:", error.message);
+  }
 
   state.step = nextStep;
   state.waitingForProductName = true;
@@ -322,35 +884,13 @@ async function sendAiHelpOrFallback(phone, text, state, nextStep) {
   if (aiResponse) {
     return sendTextAndReturn(
       phone,
-      `${aiResponse}
-
-Si algo te gustó, escríbeme el nombre del producto y te ayudo a agregarlo al pedido 😊
-
-También puedes responder:
-
-1. Ver la carta
-2. Recomiéndame algo
-3. Hablar con alguien del equipo`
+      `${aiResponse}\n\nEscribe *menu* para ver las opciones.`
     );
   }
 
-  return sendTextAndReturn(
-    phone,
-    `Te ayudo con gusto 😊
-
-Puedes elegir una de estas opciones:
-
-1. Ver la carta
-2. Recomiéndame algo
-3. Hablar con alguien del equipo
-
-O escríbeme el nombre de un producto que quieras buscar.`
-  );
+  getFreshState(phone);
+  return sendMainMenu(phone);
 }
-
-// ---------------------------------------------------------------------------
-// BÚSQUEDA Y SELECCIÓN DE PRODUCTO
-// ---------------------------------------------------------------------------
 
 async function handleProductFoundStep(phone, text, state) {
   if (state.waitingForProductName) {
@@ -371,9 +911,6 @@ async function handleProductFoundStep(phone, text, state) {
     const foundProducts = searchProducts(text);
 
     if (foundProducts.length === 0) {
-      if (shouldUseAi(text)) {
-        return sendAiHelpOrFallback(phone, text, state, "PRODUCT_FOUND");
-      }
       return offerProductHelp(phone, state);
     }
 
@@ -396,7 +933,10 @@ async function handleProductFoundStep(phone, text, state) {
   state.step = "ASK_QUANTITY";
   states.set(phone, state);
 
-  return askForQuantityAfterProduct(phone, selectedProduct);
+  return sendTextAndReturn(
+    phone,
+    `Seleccionaste: *${selectedProduct.name}*\nPrecio: ${formatPrice(selectedProduct.price)}\n\n¿Cuántas unidades deseas agregar?\n\n_Escribe "atrás" para volver._`
+  );
 }
 
 function sendProductSearchResults(phone, foundProducts) {
@@ -406,71 +946,129 @@ function sendProductSearchResults(phone, foundProducts) {
 
   return sendTextAndReturn(
     phone,
-    `Encontré estas opciones relacionadas con tu búsqueda:
-
-${productList}
-
-¿Cuál te gustaría agregar a tu pedido?
-
-Responde con el número de la opción 😊`
+    `Encontré estas opciones:\n\n${productList}\n\n¿Cuál te gustaría agregar a tu pedido?\n\nResponde con el número de la opción 😊`
   );
 }
 
-function askForQuantityAfterProduct(phone, selectedProduct) {
-  return sendTextAndReturn(
-    phone,
-    `Excelente elección 🔥
+// ---------------------------------------------------------------------------
+// CANTIDAD → NOTA → AGREGAR MÁS
+// ---------------------------------------------------------------------------
 
-Seleccionaste: ${selectedProduct.name}
-Precio: ${formatPrice(selectedProduct.price)}
-
-¿Cuántas unidades deseas agregar?`
-  );
-}
-
-function handleQuantityStep(phone, text, state) {
+async function handleQuantityStep(phone, text, state) {
   const quantity = Number(text);
 
   if (!Number.isInteger(quantity) || quantity < 1) {
-    return sendTextAndReturn(phone, "Por favor dime cuántas unidades deseas. Ejemplo: 1, 2, 3...");
+    return sendTextAndReturn(phone, "Por favor dime cuántas unidades deseas. Ejemplo: 1, 2, 3...\n\n_Escribe \"atrás\" para volver._");
   }
 
-  addProductToCart(state, state.selectedProduct, quantity);
+  state.pendingQuantity = quantity;
+  state.step = "ASK_NOTE";
+  states.set(phone, state);
+
+  await sendWhatsAppButtons(
+    phone,
+    `Perfecto, ${quantity} unidad(es) de *${state.selectedProduct.name}*.\n\n¿Deseas agregar alguna nota o indicación especial?`,
+    [
+      { id: "note_no", title: "No, sin notas" },
+      { id: "note_yes", title: "Sí, agregar nota" }
+    ],
+    "📝 Nota del producto"
+  );
+
+    return "pregunta nota enviada";
+}
+
+async function handleNoteStep(phone, text, rawText, state) {
+  if (text === "note_no" || text === "no" || text.includes("sin nota")) {
+    state.note = null;
+    addProductToCart(state, state.selectedProduct, state.pendingQuantity, state.note);
+    state.pendingQuantity = null;
+    state.step = "ASK_ADD_MORE";
+    states.set(phone, state);
+
+    return sendAddMoreButtons(phone, state);
+  }
+
+  if (text === "note_yes" || text === "si" || text === "sí" || text.includes("agregar nota")) {
+    state.step = "ASK_NOTE_TEXT";
+    states.set(phone, state);
+    return sendTextAndReturn(phone, `Escribe la nota o indicación especial para *${state.selectedProduct.name}*.\n\n_Escribe "atrás" para volver._`);
+  }
+
+  // Por si escriben la nota directamente sin pulsar el botón
+  state.note = text.trim();
+  addProductToCart(state, state.selectedProduct, state.pendingQuantity, state.note);
+  state.pendingQuantity = null;
   state.step = "ASK_ADD_MORE";
   states.set(phone, state);
 
-  return sendCartSummaryWithAddMoreQuestion(phone, state);
+  return sendAddMoreButtons(phone, state);
 }
 
-function handleAddMoreStep(phone, text, state) {
-  if (isYes(text)) {
-    return askProductName(phone, state, "Perfecto 😊 ¿Qué otro producto deseas agregar?");
+async function handleNoteTextStep(phone, rawText, state) {
+  const note = rawText.trim();
+
+  if (note.length < 1) {
+    return sendTextAndReturn(phone, "Por favor escribe la nota o indicación.\n\n_Escribe \"atrás\" para volver._");
   }
 
-  if (isNo(text)) {
+  state.note = note;
+  addProductToCart(state, state.selectedProduct, state.pendingQuantity, state.note);
+  state.pendingQuantity = null;
+  state.step = "ASK_ADD_MORE";
+  states.set(phone, state);
+
+  return sendAddMoreButtons(phone, state);
+}
+
+async function sendAddMoreButtons(phone, state) {
+  await sendWhatsAppButtons(
+    phone,
+    `${buildCartSummary(state)}\n\n¿Qué deseas hacer ahora?`,
+    [
+      { id: "add_more", title: "Agregar producto" },
+      { id: "finalize", title: "Finalizar orden" }
+    ],
+    "🛒 Tu pedido"
+  );
+
+  return "botones agregar/finalizar enviados";
+}
+
+async function handleAddMoreStep(phone, text, state) {
+  if (text === "add_more" || isYes(text)) {
+    return askProductName(phone, state, "Perfecto 😊 ¿Qué otro producto deseas agregar? Escríbeme el nombre o escribe *menu* para ver la carta.");
+  }
+
+  if (text === "finalize" || isNo(text)) {
     state.step = "ASK_CUSTOMER_NAME";
     states.set(phone, state);
 
     return sendTextAndReturn(
       phone,
-      `${buildCartSummary(state)}
-
-Para dejar tu pedido registrado, ¿me regalas tu nombre, por favor?`
+      `${buildCartSummary(state)}\n\nPara registrar tu pedido necesito algunos datos.\n\n¿Me regalas tu *nombre completo*, por favor?\n\n_Escribe "atrás" para volver._`
     );
   }
 
-  return sendTextAndReturn(phone, "¿Deseas agregar otro producto al pedido? Responde *sí* o *no* 😊");
+  return sendTextAndReturn(
+    phone,
+    `Por favor elige una opción:\n\n• Escribe *agregar* para añadir otro producto\n• Escribe *finalizar* para continuar con tus datos`
+  );
 }
 
-function addProductToCart(state, product, quantity) {
+// ---------------------------------------------------------------------------
+// CARRITO
+// ---------------------------------------------------------------------------
+
+function addProductToCart(state, product, quantity, note) {
   if (!state.cart) state.cart = [];
 
-  const existingItem = state.cart.find((item) => item.product.id === product.id);
+  const existingItem = state.cart.find((item) => item.product.id === product.id && (item.note || null) === (note || null));
 
   if (existingItem) {
     existingItem.quantity += quantity;
   } else {
-    state.cart.push({ product, quantity });
+    state.cart.push({ product, quantity, note: note || null });
   }
 
   calculateCartTotals(state);
@@ -493,88 +1091,64 @@ function calculateCartTotals(state) {
   state.totalPrice = totalPrice;
 }
 
-function sendCartSummaryWithAddMoreQuestion(phone, state) {
-  calculateCartTotals(state);
-
-  return sendTextAndReturn(
-    phone,
-    `${buildCartSummary(state)}
-
-¿Deseas agregar otro producto al pedido?
-
-Responde *sí* para agregar otro o *no* para continuar con tus datos.`
-  );
-}
-
 function buildCartSummary(state) {
   calculateCartTotals(state);
 
   const cartLines = state.cart
-    .map((item, index) => `${index + 1}. ${item.product.name} x${item.quantity} — ${formatPrice(item.subtotal)}`)
+    .map((item, index) => {
+      const note = item.note ? `\n   📝 ${item.note}` : "";
+      return `${index + 1}. ${item.product.name} x${item.quantity} — ${formatPrice(item.subtotal)}${note}`;
+    })
     .join("\n");
 
-  return `🛒 Resumen de tu pedido:
-
-${cartLines}
-
-Total: ${formatPrice(state.totalPrice)}`;
+  return `🛒 Tu pedido:\n\n${cartLines}\n\nTotal: ${formatPrice(state.totalPrice)}`;
 }
 
 // ---------------------------------------------------------------------------
-// DATOS DEL CLIENTE, ENTREGA Y PAGO
+// DATOS DEL CLIENTE — Nombre, teléfono, dirección, barrio
 // ---------------------------------------------------------------------------
 
 function handleCustomerNameStep(phone, rawText, state) {
   const name = rawText.trim();
 
   if (name.length < 2 || isInvalidText(name)) {
-    return sendTextAndReturn(phone, "Por favor escríbeme tu nombre. Ejemplo: Fabián 😊");
+    return sendTextAndReturn(phone, "Por favor escríbeme tu nombre completo. Ejemplo: Fabián Pérez 😊\n\n_Escribe \"atrás\" para volver._");
   }
 
   state.customerName = capitalizeWords(name);
-  state.step = "ASK_DELIVERY_METHOD";
+  state.step = "ASK_PHONE";
   states.set(phone, state);
 
   return sendTextAndReturn(
     phone,
-    `Gracias, ${state.customerName} 😊
-
-¿Cómo prefieres recibir tu pedido?
-
-1. Recoger en la panadería
-2. Domicilio`
+    `Gracias, ${state.customerName} 😊\n\n¿A qué número te podemos llamar cuando el domiciliario esté en camino?\n\n_Escribe *mismo* para usar este mismo WhatsApp (${phone})._\n\n_Escribe "atrás" para volver._`
   );
 }
 
-function handleDeliveryMethodStep(phone, text, state) {
-  const method = parseDeliveryMethod(text);
+function handlePhoneStep(phone, text, rawText, state) {
+  // Si responde "mismo" o "este", usar el mismo número de WhatsApp
+  if (text === "mismo" || text === "este" || text === "mi numero" || text === "el mismo") {
+    state.contactPhone = phone;
+  } else {
+    const cleanNumber = rawText.replace(/[^\d]/g, "");
 
-  if (!method) {
-    return sendTextAndReturn(
-      phone,
-      `Por favor elige una opción válida:
+    if (cleanNumber.length < 7) {
+      return sendTextAndReturn(
+        phone,
+        `No entendí bien el número. Escríbelo completo, por ejemplo: 3001234567.\n\nO escribe *mismo* para usar este WhatsApp (${phone}).\n\n_Escribe "atrás" para volver._`
+      );
+    }
 
-1. Recoger en la panadería
-2. Domicilio`
-    );
+    state.contactPhone = cleanNumber;
   }
 
-  state.deliveryMethod = method;
-
-  if (method === "domicilio") {
-    state.step = "ASK_ADDRESS";
-    states.set(phone, state);
-
-    return sendTextAndReturn(
-      phone,
-      "Perfecto 😊 Dime la dirección completa y el barrio para el domicilio. Ejemplo: Calle 10 # 20-30, barrio Centro."
-    );
-  }
-
-  state.step = "ASK_PAYMENT_METHOD";
+  state.step = "ASK_ADDRESS";
   states.set(phone, state);
 
-  return sendPaymentQuestion(phone);
+  return sendTextAndReturn(
+    phone,
+    `Perfecto 📞\n\nAhora dime la *dirección de entrega* (calle, carrera, número, torre, apto, etc.):\n\nEjemplo: Calle 10 # 20-30, Torre 2, Apto 301\n\n_Escribe "atrás" para volver._`
+  );
 }
 
 function handleAddressStep(phone, rawText, state) {
@@ -583,37 +1157,72 @@ function handleAddressStep(phone, rawText, state) {
   if (address.length < 5 || isInvalidText(address)) {
     return sendTextAndReturn(
       phone,
-      "Por favor escríbeme una dirección más completa. Ejemplo: Calle 10 # 20-30, barrio Centro 😊"
+      `Por favor escríbeme una dirección más completa.\n\nEjemplo: Calle 10 # 20-30, Torre 2, Apto 301\n\n_Escribe "atrás" para volver._`
     );
   }
 
   state.address = capitalizeWords(address);
+  state.step = "ASK_NEIGHBORHOOD";
+  states.set(phone, state);
+
+  return sendTextAndReturn(
+    phone,
+    `Anotado ✅\n\n¿En qué *barrio* queda?\n\n_Escribe "atrás" para volver._`
+  );
+}
+
+function handleNeighborhoodStep(phone, rawText, state) {
+  const neighborhood = rawText.trim();
+
+  if (neighborhood.length < 2 || isInvalidText(neighborhood)) {
+    return sendTextAndReturn(
+      phone,
+      `Por favor escríbeme el nombre del barrio.\n\n_Escribe "atrás" para volver._`
+    );
+  }
+
+  state.neighborhood = capitalizeWords(neighborhood);
   state.step = "ASK_PAYMENT_METHOD";
   states.set(phone, state);
 
   return sendPaymentQuestion(phone);
 }
 
-function sendPaymentQuestion(phone) {
-  return sendTextAndReturn(
+async function sendPaymentQuestion(phone) {
+  await sendWhatsAppButtons(
     phone,
-    `¿Qué método de pago prefieres?
-
-1. Transferencia
-2. Efectivo contraentrega`
+    "¿Cómo prefieres pagar tu pedido?",
+    [
+      { id: "pay_cash", title: "Efectivo" },
+      { id: "pay_transfer", title: "Transferencia" }
+    ],
+    "💵 Método de pago"
   );
+
+  return "pregunta de pago enviada";
 }
 
+// ---------------------------------------------------------------------------
+// PAGO Y CONFIRMACIÓN FINAL
+// ---------------------------------------------------------------------------
+
 async function handlePaymentMethodStep(phone, text, state) {
-  const paymentMethod = parsePaymentMethod(text);
+  let paymentMethod = null;
+
+  if (text === "pay_cash" || text.includes("efectivo")) {
+    paymentMethod = "efectivo";
+  } else if (text === "pay_transfer" || text.includes("transferencia")) {
+    paymentMethod = "transferencia";
+  } else if (text === "1") {
+    paymentMethod = "transferencia";
+  } else if (text === "2") {
+    paymentMethod = "efectivo";
+  }
 
   if (!paymentMethod) {
     return sendTextAndReturn(
       phone,
-      `Elige una opción válida:
-
-1. Transferencia
-2. Efectivo contraentrega`
+      `Elige una opción válida usando los botones, o escribe:\n\n1. Transferencia\n2. Efectivo\n\n_Escribe "atrás" para volver._`
     );
   }
 
@@ -626,12 +1235,14 @@ async function handlePaymentMethodStep(phone, text, state) {
   const orderPayload = {
     phone,
     customerName: state.customerName,
-    deliveryMethod: state.deliveryMethod,
-    address: state.address || null,
+    contactPhone: state.contactPhone,
+    address: state.address,
+    neighborhood: state.neighborhood,
     paymentMethod: state.paymentMethod,
     items: state.cart.map((item) => ({
       name: item.product.name,
       quantity: item.quantity,
+      note: item.note || null,
       subtotal: item.subtotal
     })),
     total: state.totalPrice
@@ -641,63 +1252,26 @@ async function handlePaymentMethodStep(phone, text, state) {
   console.log(JSON.stringify(orderPayload, null, 2));
   console.log("Estado: pendiente de confirmación\n");
 
-  // Si configuras MAKE_WEBHOOK_URL en .env, este evento llega a tu escenario
-  // de Make (por ejemplo para guardarlo en Google Sheets o avisarte por
-  // Telegram). Si no lo configuras, simplemente no hace nada.
   await notifyMake("nuevo_pedido", orderPayload);
 
-  const deliveryLine =
-    state.deliveryMethod === "domicilio"
-      ? `Entrega: Domicilio\nDirección: ${state.address}`
-      : `Entrega: Recoger en ${BAKERY_NAME} (${BAKERY_ADDRESS})`;
-
-  if (paymentMethod === "transferencia") {
-    return sendTextAndReturn(
-      phone,
-      `Listo, ${state.customerName} ✅ Tu pedido quedó registrado:
-
-${buildCartSummary(state)}
-
-${deliveryLine}
-Pago: Transferencia
-
-Puedes transferir a:
-${PAYMENT_INFO.bank} — ${PAYMENT_INFO.accountNumber}
-Titular: ${PAYMENT_INFO.holderName}
-
-Cuando hagas el pago, envía el comprobante por este chat.
-
-Gracias por preferir a ${BAKERY_NAME} 🥐`
-    );
-  }
+  const paymentLine = paymentMethod === "transferencia"
+    ? `💳 Pago: Transferencia\n\nTransfiere a:\n${PAYMENT_INFO.bank} — ${PAYMENT_INFO.accountNumber}\nTitular: ${PAYMENT_INFO.holderName}\n\nEnvía el comprobante por este chat.`
+    : `💵 Pago: Efectivo contraentrega`;
 
   return sendTextAndReturn(
     phone,
-    `Listo, ${state.customerName} ✅ Tu pedido quedó registrado:
-
-${buildCartSummary(state)}
-
-${deliveryLine}
-Pago: Efectivo contraentrega
-
-Gracias por preferir a ${BAKERY_NAME} 🥐`
+    `Listo, ${state.customerName} ✅ Tu pedido quedó registrado:\n\n${buildCartSummary(state)}\n\n📋 *Datos de entrega*\n👤 Nombre: ${state.customerName}\n📞 Llamar al: ${state.contactPhone}\n🏠 Dirección: ${state.address}\n📍 Barrio: ${state.neighborhood}\n\n${paymentLine}\n\nGracias por preferir a ${BAKERY_NAME} 🥐`
   );
 }
 
 // ---------------------------------------------------------------------------
-// RECOMENDACIONES ("no sé qué pedir")
+// RECOMENDACIONES
 // ---------------------------------------------------------------------------
 
 function sendRecoCategoryQuestion(phone) {
   return sendTextAndReturn(
     phone,
-    `¿Qué se te antoja hoy? 😊
-
-1. Pan
-2. Pasteles o tortas
-3. Postres
-4. Bebidas
-5. Sorpréndeme`
+    `¿Qué se te antoja hoy? 😊\n\n1. Pan\n2. Pasteles o tortas\n3. Postres\n4. Bebidas\n5. Sorpréndeme\n\n_Escribe "atrás" para volver._`
   );
 }
 
@@ -707,13 +1281,7 @@ function handleRecoCategoryStep(phone, text, state) {
   if (!category) {
     return sendTextAndReturn(
       phone,
-      `Elige una opción válida:
-
-1. Pan
-2. Pasteles o tortas
-3. Postres
-4. Bebidas
-5. Sorpréndeme`
+      `Elige una opción válida:\n\n1. Pan\n2. Pasteles o tortas\n3. Postres\n4. Bebidas\n5. Sorpréndeme\n\n_Escribe "atrás" para volver._`
     );
   }
 
@@ -723,12 +1291,7 @@ function handleRecoCategoryStep(phone, text, state) {
 
   return sendTextAndReturn(
     phone,
-    `¿Para qué ocasión es?
-
-1. Antojo del día
-2. Cumpleaños o celebración
-3. Para compartir en familia u oficina
-4. No sé, muéstrame lo más pedido`
+    `¿Para qué ocasión es?\n\n1. Antojo del día\n2. Cumpleaños o celebración\n3. Para compartir en familia u oficina\n4. No sé, muéstrame lo más pedido\n\n_Escribe "atrás" para volver._`
   );
 }
 
@@ -738,12 +1301,7 @@ function handleRecoMoodStep(phone, text, state) {
   if (!mood) {
     return sendTextAndReturn(
       phone,
-      `Elige una opción válida:
-
-1. Antojo del día
-2. Cumpleaños o celebración
-3. Para compartir en familia u oficina
-4. No sé, muéstrame lo más pedido`
+      `Elige una opción válida:\n\n1. Antojo del día\n2. Cumpleaños o celebración\n3. Para compartir en familia u oficina\n4. No sé, muéstrame lo más pedido\n\n_Escribe "atrás" para volver._`
     );
   }
 
@@ -761,13 +1319,7 @@ function handleRecoMoodStep(phone, text, state) {
 
   return sendTextAndReturn(
     phone,
-    `Según lo que me cuentas, esto te puede gustar:
-
-${productList}
-
-¿Cuál te gustaría agregar a tu pedido?
-
-Responde con el número de la opción 😊`
+    `Según lo que me cuentas, esto te puede gustar:\n\n${productList}\n\n¿Cuál te gustaría agregar a tu pedido?\n\nResponde con el número de la opción 😊\n\n_Escribe "atrás" para volver._`
   );
 }
 
@@ -775,7 +1327,7 @@ function handleRecommendationSelectionStep(phone, text, state) {
   const selectedIndex = Number(text);
 
   if (!Number.isInteger(selectedIndex) || selectedIndex < 1 || selectedIndex > state.recommendedProducts.length) {
-    return sendTextAndReturn(phone, "Por favor responde con el número de la opción que quieres agregar 😊");
+    return sendTextAndReturn(phone, "Por favor responde con el número de la opción que quieres agregar 😊\n\n_Escribe \"atrás\" para volver._");
   }
 
   const selectedProduct = state.recommendedProducts[selectedIndex - 1];
@@ -784,7 +1336,10 @@ function handleRecommendationSelectionStep(phone, text, state) {
   state.step = "ASK_QUANTITY";
   states.set(phone, state);
 
-  return askForQuantityAfterProduct(phone, selectedProduct);
+  return sendTextAndReturn(
+    phone,
+    `Seleccionaste: *${selectedProduct.name}*\nPrecio: ${formatPrice(selectedProduct.price)}\n\n¿Cuántas unidades deseas agregar?\n\n_Escribe "atrás" para volver._`
+  );
 }
 
 function getRecommendations(state) {
@@ -814,8 +1369,6 @@ function getRecommendations(state) {
     return filtered.slice(0, 3);
   }
 
-  // Si no hay suficientes con el filtro exacto, se completa con productos
-  // de la misma categoría (o populares en general) hasta llegar a 3.
   const combined = [...filtered];
   const pool = products.filter((p) => p.available);
 
@@ -851,15 +1404,11 @@ function parseRecoMood(text) {
 // ---------------------------------------------------------------------------
 
 function handleHumanHandoff(phone) {
-  states.set(phone, { step: "ASK_LEAD_NAME" });
+  states.set(phone, { step: "ASK_LEAD_NAME", cart: [], history: [] });
 
   return sendTextAndReturn(
     phone,
-    `Claro 😊 Puedo dejar tu solicitud registrada para que alguien del equipo te escriba.
-
-Nuestro horario de atención es de ${HUMAN_ATTENTION_SCHEDULE}.
-
-¿Me regalas tu nombre, por favor?`
+    `Claro 😊 Puedo dejar tu solicitud registrada para que alguien del equipo te escriba.\n\nNuestro horario de atención es de ${HUMAN_ATTENTION_SCHEDULE}.\n\n¿Me regalas tu nombre, por favor?`
   );
 }
 
@@ -896,16 +1445,12 @@ async function handleLeadNeedStep(phone, rawText, state) {
 
   return sendTextAndReturn(
     phone,
-    `Gracias, ${state.customerName} ✅ Dejamos tu solicitud registrada:
-
-${state.need}
-
-Alguien del equipo revisará este chat en horario de atención. Gracias por escribirnos 😊`
+    `Gracias, ${state.customerName} ✅ Dejamos tu solicitud registrada:\n\n${state.need}\n\nAlguien del equipo revisará este chat en horario de atención. Gracias por escribirnos 😊`
   );
 }
 
 // ---------------------------------------------------------------------------
-// BÚSQUEDA Y UTILIDADES
+// UTILIDADES
 // ---------------------------------------------------------------------------
 
 function searchProducts(text) {
@@ -957,58 +1502,15 @@ function shouldUseAi(text) {
   if (directOptions.includes(text)) return false;
 
   const aiKeywords = [
-    "quiero",
-    "busco",
-    "recomienda",
-    "recomiendame",
-    "recomiéndame",
-    "cumpleanos",
-    "cumpleaños",
-    "cumple",
-    "sin gluten",
-    "gluten",
-    "vegano",
-    "alergia",
-    "dulce",
-    "salado",
-    "economico",
-    "barato",
-    "compartir",
-    "personas",
-    "cual es",
-    "cuál es",
-    "mejor",
-    "rico",
-    "rica",
-    "antojo",
-    "domicilio",
-    "hacen",
-    "tienen",
-    "personalizada",
-    "encargo"
+    "quiero", "busco", "recomienda", "recomiendame", "recomiéndame",
+    "cumpleanos", "cumpleaños", "cumple", "sin gluten", "gluten",
+    "vegano", "alergia", "dulce", "salado", "economico", "barato",
+    "compartir", "personas", "cual es", "cuál es", "mejor", "rico",
+    "rica", "antojo", "domicilio", "hacen", "tienen", "como", "cuando", "donde",
+    "por que", "personalizada", "encargo"
   ];
 
   return aiKeywords.some((word) => text.includes(word)) || text.split(" ").length >= 4;
-}
-
-function parseDeliveryMethod(text) {
-  if (text === "1" || text.includes("recoger") || text.includes("tienda")) return "recoger";
-  if (text === "2" || text.includes("domicilio") || text.includes("enviar")) return "domicilio";
-  return null;
-}
-
-function parsePaymentMethod(text) {
-  if (text === "1" || text.includes("transferencia")) return "transferencia";
-  if (text === "2" || text.includes("efectivo") || text.includes("contraentrega")) return "contraentrega";
-  return null;
-}
-
-function isYes(text) {
-  return text === "si" || text === "sí" || text === "s" || text.includes("claro") || text.includes("otro");
-}
-
-function isNo(text) {
-  return text === "no" || text === "n" || text.includes("continuar") || text.includes("listo");
 }
 
 function isBotAllowedToRespond() {
@@ -1060,28 +1562,4 @@ function timeToMinutes(time) {
   }
 
   return hour * 60 + minute;
-}
-
-function normalize(text) {
-  return text
-    .trim()
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "");
-}
-
-function capitalizeWords(text) {
-  return text
-    .trim()
-    .toLowerCase()
-    .split(" ")
-    .filter(Boolean)
-    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(" ");
-}
-
-function isInvalidText(value) {
-  const normalized = normalize(value);
-  const invalidWords = ["1", "2", "transferencia", "contraentrega", "pago", "domicilio", "recoger"];
-  return invalidWords.includes(normalized);
 }
