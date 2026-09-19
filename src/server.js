@@ -1,8 +1,4 @@
 // server.js
-// Punto de entrada del proyecto. Aquí se levanta el servidor web que Meta
-// (WhatsApp Cloud API) usa para mandarle los mensajes al bot, y desde donde
-// el bot responde.
-
 import express from "express";
 import dotenv from "dotenv";
 import { handleIncomingMessage } from "./services/conversation.js";
@@ -15,41 +11,79 @@ app.use(express.json());
 const PORT = process.env.PORT || 3000;
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || "cambia_este_token";
 
-// Chequeo rápido para saber que el servidor está vivo.
 app.get("/", (req, res) => {
   res.send("Bot de la panadería funcionando ✅");
 });
 
-// Ruta de Health Check para UptimeRobot
 app.get("/health", (_req, res) => {
   res.status(200).send("OK");
 });
-//prueba
-// Endpoint para webhooks externos de Make (por ejemplo, Google Sheets, Telegram, CRM, etc.)
+
+function extractIncomingText(message) {
+  if (!message) return null;
+
+  if (message.interactive) {
+    const interactive = message.interactive;
+
+    if (interactive.list_reply) {
+      return interactive.list_reply.id ?? interactive.list_reply.title ?? null;
+    }
+
+    if (interactive.button_reply) {
+      return interactive.button_reply.id ?? interactive.button_reply.title ?? null;
+    }
+  }
+
+  if (message.text?.body !== undefined) {
+    return message.text.body;
+  }
+
+  return null;
+}
+
+function extractInboundMessage(payload) {
+  const metaMessage = payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
+
+  if (metaMessage) {
+    return {
+      phone: metaMessage.from,
+      text: extractIncomingText(metaMessage),
+      type: metaMessage.type || "text"
+    };
+  }
+
+  const simpleMessage = payload.messages?.[0];
+  const text =
+    extractIncomingText(simpleMessage) ??
+    payload.message ??
+    payload.text ??
+    payload.body ??
+    payload?.data?.message ??
+    payload?.data?.text ??
+    null;
+
+  const phone =
+    simpleMessage?.from ??
+    payload.phone ??
+    payload.from ??
+    payload?.data?.from ??
+    null;
+
+  return { phone, text, type: simpleMessage?.type || "text" };
+}
+
 app.post("/make", async (req, res) => {
   const payload = req.body || {};
   console.log("📥 Webhook de Make recibido:", JSON.stringify(payload));
 
   try {
-    const messageSource =
-      payload.messages?.[0]?.text?.body ??
-      payload.message ??
-      payload.text ??
-      payload.body ??
-      payload?.data?.message ??
-      payload?.data?.text;
+    const { phone, text: messageSource, type: messageType } = extractInboundMessage(payload);
 
-    const phone =
-      payload.messages?.[0]?.from ??
-      payload.phone ??
-      payload.from ??
-      payload?.data?.from;
-
-    if (!messageSource || !String(messageSource).trim()) {
+    if (messageType === "text" && (!messageSource || !String(messageSource).trim())) {
       return res.status(200).json({
         ok: false,
         error: "No hay mensaje",
-        respuesta: "No recibí ningún mensaje de texto para procesar."
+        respuesta: "No recibí ningún mensaje para procesar."
       });
     }
 
@@ -61,10 +95,7 @@ app.post("/make", async (req, res) => {
       });
     }
 
-    // Procesar el mensaje con la lógica del bot.
-    // Este paso puede devolver un objeto de la API de Meta al enviar por WhatsApp,
-    // pero para Make necesitamos devolver siempre un texto plano.
-    const botResult = await handleIncomingMessage(phone, String(messageSource));
+    const botResult = await handleIncomingMessage(phone, String(messageSource || ""), messageType);
 
     const respuesta = typeof botResult === "string"
       ? botResult
@@ -72,10 +103,7 @@ app.post("/make", async (req, res) => {
         ? "Mensaje recibido y procesado correctamente."
         : "Lo siento, no encontré información sobre eso.";
 
-    return res.status(200).json({
-      ok: true,
-      respuesta
-    });
+    return res.status(200).json({ ok: true, respuesta });
   } catch (error) {
     console.error("❌ Error procesando el mensaje:", error);
     return res.status(200).json({
@@ -86,7 +114,6 @@ app.post("/make", async (req, res) => {
   }
 });
 
-// Endpoint para integraciones o callbacks de Render.
 app.post("/render", (req, res) => {
   const payload = req.body || {};
   console.log("📥 Evento de Render recibido:", JSON.stringify(payload));
@@ -105,15 +132,13 @@ app.get("/privacidad", (req, res) => {
     (nombre, número de teléfono, dirección y detalles del pedido)
     únicamente para gestionar tu pedido y comunicarnos contigo.</p>
     <p>No compartimos tus datos con terceros distintos a los necesarios
-    para procesar el pedido (por ejemplo, herramientas internas de
-    automatización). No usamos tu información con fines publicitarios.</p>
+    para procesar el pedido. No usamos tu información con fines publicitarios.</p>
     <p>Puedes solicitar la eliminación de tus datos escribiéndonos
     directamente por este mismo chat.</p>
     <p>Contacto: camiloproyectos14@gmail.com</p>
   `);
 });
 
-// META llama a esta ruta UNA VEZ, cuando configuras el webhook.
 app.get("/webhook", (req, res) => {
   const mode = req.query["hub.mode"];
   const token = req.query["hub.verify_token"];
@@ -127,7 +152,6 @@ app.get("/webhook", (req, res) => {
   return res.sendStatus(403);
 });
 
-// META llama a esta ruta CADA VEZ que un cliente le escribe.
 app.post("/webhook", async (req, res) => {
   res.sendStatus(200);
 
@@ -135,16 +159,18 @@ app.post("/webhook", async (req, res) => {
     const entry = req.body.entry?.[0];
     const change = entry?.changes?.[0];
     const value = change?.value;
-    const message = value?.messages?.find((item) => item?.type === "text");
+    const message = value?.messages?.[0];
 
-    if (!message?.text?.body) return;
+    if (!message) return;
+
+    console.log("📨 Mensaje recibido:", JSON.stringify(message, null, 2));
 
     const phone = message.from;
-    const text = message.text.body;
+    const text = extractIncomingText(message);
 
-    if (!text || !String(text).trim()) return;
+    if (message.type === "text" && (!text || !String(text).trim())) return;
 
-    await handleIncomingMessage(phone, text);
+    await handleIncomingMessage(phone, text || "", message.type || "text");
   } catch (error) {
     console.error("❌ Error procesando el mensaje entrante:", error);
   }

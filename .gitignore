@@ -2,4 +2,8 @@ node_modules/
 .env
 npm-debug.log
 .DS_Store
-*.log
+*.log.env
+*.bak
+test-payloads/
+payload-*.json
+test-*.ps1

@@ -21,24 +21,42 @@ async function callGraphApi(payload) {
 
   const url = `https://graph.facebook.com/${GRAPH_API_VERSION}/${PHONE_NUMBER_ID}/messages`;
 
-  const response = await fetch(url, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${WHATSAPP_TOKEN}`,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify(payload)
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000); // 15s
 
-  const data = await response.json();
+  try {
+    const response = await fetch(url, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${WHATSAPP_TOKEN}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify(payload),
+      signal: controller.signal
+    });
 
-  if (!response.ok) {
-    console.error("❌ Error enviando mensaje de WhatsApp:", JSON.stringify(data));
+    const data = await response.json();
+    clearTimeout(timeout);
+
+    if (!response.ok) {
+      console.error("❌ Error enviando mensaje de WhatsApp:", JSON.stringify(data));
+    }
+
+    return data;
+  } catch (error) {
+    clearTimeout(timeout);
+    if (error.name === "AbortError") {
+      console.error("❌ Timeout: WhatsApp API no respondió en 15s");
+    } else {
+      console.error("❌ Error en fetch a WhatsApp:", error.message);
+    }
+    return null;
   }
-
-  return data;
 }
 
+// ---------------------------------------------------------------------------
+// 1. MENSAJE DE TEXTO SIMPLE
+// ---------------------------------------------------------------------------
 export async function sendWhatsAppMessage(phone, text) {
   return callGraphApi({
     messaging_product: "whatsapp",
@@ -48,15 +66,80 @@ export async function sendWhatsAppMessage(phone, text) {
   });
 }
 
+// ---------------------------------------------------------------------------
+// 2. MENSAJE CON BOTONES (máximo 3)
+// ---------------------------------------------------------------------------
+export async function sendWhatsAppButtons(phone, bodyText, buttons, header, footer) {
+  const safeButtons = (buttons || []).slice(0, 3).map((b) => ({
+    type: "reply",
+    reply: {
+      id: String(b.id).slice(0, 256),
+      title: String(b.title).slice(0, 20)
+    }
+  }));
+
+  if (safeButtons.length === 0) {
+    return sendWhatsAppMessage(phone, bodyText);
+  }
+
+  return callGraphApi({
+    messaging_product: "whatsapp",
+    to: phone,
+    type: "interactive",
+    interactive: {
+      type: "button",
+      ...(header ? { header: { type: "text", text: String(header).slice(0, 60) } } : {}),
+      body: { text: String(bodyText).slice(0, 1024) },
+      ...(footer ? { footer: { text: String(footer).slice(0, 60) } } : {}),
+      action: { buttons: safeButtons }
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
+// 3. MENSAJE CON LISTA DESPLEGABLE (máximo 10 filas)
+// ---------------------------------------------------------------------------
+export async function sendWhatsAppList(phone, bodyText, buttonLabel, sections, header, footer) {
+  const safeSections = (sections || []).slice(0, 10).map((section) => ({
+    title: String(section.title).slice(0, 24),
+    rows: (section.rows || []).slice(0, 10).map((row) => ({
+      id: String(row.id).slice(0, 200),
+      title: String(row.title).slice(0, 24),
+      ...(row.description
+        ? { description: String(row.description).slice(0, 72) }
+        : {})
+    }))
+  }));
+
+  if (safeSections.length === 0 || safeSections.every((s) => s.rows.length === 0)) {
+    return sendWhatsAppMessage(phone, bodyText);
+  }
+
+  return callGraphApi({
+    messaging_product: "whatsapp",
+    to: phone,
+    type: "interactive",
+    interactive: {
+      type: "list",
+      ...(header ? { header: { type: "text", text: String(header).slice(0, 60) } } : {}),
+      body: { text: String(bodyText).slice(0, 1024) },
+      ...(footer ? { footer: { text: String(footer).slice(0, 60) } } : {}),
+      action: {
+        button: String(buttonLabel).slice(0, 20),
+        sections: safeSections
+      }
+    }
+  });
+}
+
+// ---------------------------------------------------------------------------
+// 4. MENSAJE CON DOCUMENTO
+// ---------------------------------------------------------------------------
 export async function sendWhatsAppDocument(phone, mediaId, filename, caption) {
   return callGraphApi({
     messaging_product: "whatsapp",
     to: phone,
     type: "document",
-    document: {
-      id: mediaId,
-      filename,
-      caption
-    }
+    document: { id: mediaId, filename, caption }
   });
 }
