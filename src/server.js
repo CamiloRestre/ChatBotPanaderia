@@ -42,6 +42,25 @@ function extractInboundMessage(payload) {
 
 function extractInboundMessageInner(payload) {
   console.log("EXTRACT v2 entrada:", JSON.stringify(payload));
+
+  // Formato plano de Make: from, type, text_body, list_id, button_id
+  if (payload && typeof payload === "object" && payload.from !== undefined &&
+      ("text_body" in payload || "list_id" in payload || "button_id" in payload)) {
+
+    const clean = (v) => (typeof v === "string" ? v.trim() : "");
+    const listId = clean(payload.list_id);
+    const buttonId = clean(payload.button_id);
+    const textBody = clean(payload.text_body);
+
+    const command = listId || buttonId || textBody;
+    const type = clean(payload.type) || ((listId || buttonId) ? "interactive" : "text");
+
+    if (command) {
+      return { phone: clean(payload.from), text: command, type };
+    }
+    return null;
+  }
+
   const metaMessage = payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
 
   if (metaMessage) {
