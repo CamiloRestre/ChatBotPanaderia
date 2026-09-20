@@ -46,8 +46,15 @@ function extractInboundMessage(payload) {
   }
 
   const simpleMessage = payload.messages?.[0];
+  const flatText = payload.text_body ?? null;
+  const flatListId = payload.list_id ?? null;
+  const flatButtonId = payload.button_id ?? null;
+  const flatInteractiveId = flatListId || flatButtonId;
+  const flatType = payload.type || (flatInteractiveId ? "interactive" : "text");
   const text =
     extractMessageContent(simpleMessage) ??
+    flatText ??
+    flatInteractiveId ??
     payload.message ??
     payload.text ??
     payload.body ??
@@ -62,7 +69,7 @@ function extractInboundMessage(payload) {
     payload?.data?.from ??
     null;
 
-  return { phone, text, type: simpleMessage?.type || "text" };
+  return { phone, text, type: simpleMessage?.type || flatType };
 }
 
 app.post("/make", async (req, res) => {
