@@ -35,6 +35,12 @@ function extractMessageContent(message) {
 }
 
 function extractInboundMessage(payload) {
+  const result = extractInboundMessageInner(payload);
+  console.log("EXTRACT v2 salida:", JSON.stringify(result));
+  return result;
+}
+
+function extractInboundMessageInner(payload) {
   console.log("EXTRACT v2 entrada:", JSON.stringify(payload));
   const metaMessage = payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0];
 
