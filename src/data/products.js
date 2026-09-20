@@ -5,7 +5,7 @@
 // archivo que necesitas editar.
 
 export const CATEGORY_LABELS = {
-  pan: "Panadería",
+  pan: "Panaderia",
   pastel: "Pasteles y tortas",
   postre: "Postres",
   bebida: "Bebidas"

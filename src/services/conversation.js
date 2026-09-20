@@ -268,6 +268,9 @@ const STEPS_HISTORY = {
   ASK_ADDRESS: "ASK_PHONE",
   ASK_NEIGHBORHOOD: "ASK_ADDRESS",
   ASK_PAYMENT_METHOD: "ASK_NEIGHBORHOOD",
+  ASK_RECO_CATEGORY: "MAIN_MENU",
+  ASK_RECO_MOOD: "ASK_RECO_CATEGORY",
+  SHOW_RECOMMENDATIONS: "ASK_RECO_MOOD",
   CONFIRM_CANCEL_ORDER: null
 };
 
@@ -538,7 +541,9 @@ function resendStepPrompt(phone, state) {
     case "ASK_RECO_CATEGORY":
       return sendRecoCategoryQuestion(phone);
     case "ASK_RECO_MOOD":
-      return sendTextAndReturn(phone, "¿Para qué ocasión es?\n\n1. Antojo del día\n2. Cumpleaños o celebración\n3. Para compartir\n4. Lo más pedido");
+      return sendRecoMoodQuestion(phone);
+    case "SHOW_RECOMMENDATIONS":
+      return sendRecommendationsList(phone, state.recommendedProducts || []);
     default:
       return sendMainMenu(phone);
   }
@@ -623,6 +628,15 @@ async function handleBack(phone) {
 
     case "ASK_PAYMENT_METHOD":
       return sendPaymentQuestion(phone);
+
+    case "ASK_RECO_CATEGORY":
+      return sendRecoCategoryQuestion(phone);
+
+    case "ASK_RECO_MOOD":
+      return sendRecoMoodQuestion(phone);
+
+    case "SHOW_RECOMMENDATIONS":
+      return sendRecommendationsList(phone, state.recommendedProducts || []);
 
     default:
       return sendMainMenu(phone);
@@ -1271,40 +1285,65 @@ async function handlePaymentMethodStep(phone, text, state) {
 // ---------------------------------------------------------------------------
 
 function sendRecoCategoryQuestion(phone) {
-  return sendTextAndReturn(
+  return sendWhatsAppList(
     phone,
-    `¿Qué se te antoja hoy? 😊\n\n1. Pan\n2. Pasteles o tortas\n3. Postres\n4. Bebidas\n5. Sorpréndeme\n\n_Escribe "atrás" para volver._`
-  );
+    `¿Qué se te antoja hoy? 😊\n\nElige una opción de la lista, o escribe el número (1 a 5).\n\n_Escribe "atrás" para volver._`,
+    "Elegir categoría",
+    [
+      {
+        title: "Categorías",
+        rows: [
+          { id: "reco_cat_pan", title: "🥐 Pan", description: "Panes y croissants" },
+          { id: "reco_cat_pastel", title: "🎂 Pasteles o tortas", description: "Tortas y cheesecakes" },
+          { id: "reco_cat_postre", title: "🍮 Postres", description: "Algo dulce y rápido" },
+          { id: "reco_cat_bebida", title: "☕ Bebidas", description: "Para acompañar" },
+          { id: "reco_cat_sorpresa", title: "🎁 Sorpréndeme", description: "Yo elijo por ti" }
+        ]
+      }
+    ],
+    "✨ Recomendaciones"
+  ).then(() => "lista de categorías reco enviada");
 }
 
-function handleRecoCategoryStep(phone, text, state) {
+function sendRecoMoodQuestion(phone) {
+  return sendWhatsAppList(
+    phone,
+    `¿Para qué ocasión es? 🎉\n\nElige una opción de la lista, o escribe el número (1 a 4).\n\n_Escribe "atrás" para volver._`,
+    "Elegir ocasión",
+    [
+      {
+        title: "Ocasiones",
+        rows: [
+          { id: "reco_mood_antojo", title: "😋 Antojo del día", description: "Porciones individuales" },
+          { id: "reco_mood_cumpleanos", title: "🎂 Cumpleaños", description: "Celebraciones y eventos" },
+          { id: "reco_mood_compartir", title: "👨‍👩‍👧 Para compartir", description: "Familia u oficina" },
+          { id: "reco_mood_populares", title: "⭐ Lo más pedido", description: "Los favoritos de todos" }
+        ]
+      }
+    ],
+    "🎉 Ocasión"
+  ).then(() => "lista de ocasiones reco enviada");
+}
+
+async function handleRecoCategoryStep(phone, text, state) {
   const category = parseRecoCategory(text);
 
   if (!category) {
-    return sendTextAndReturn(
-      phone,
-      `Elige una opción válida:\n\n1. Pan\n2. Pasteles o tortas\n3. Postres\n4. Bebidas\n5. Sorpréndeme\n\n_Escribe "atrás" para volver._`
-    );
+    return sendRecoCategoryQuestion(phone);
   }
 
   state.recoCategory = category;
   state.step = "ASK_RECO_MOOD";
   states.set(phone, state);
 
-  return sendTextAndReturn(
-    phone,
-    `¿Para qué ocasión es?\n\n1. Antojo del día\n2. Cumpleaños o celebración\n3. Para compartir en familia u oficina\n4. No sé, muéstrame lo más pedido\n\n_Escribe "atrás" para volver._`
-  );
+  return sendRecoMoodQuestion(phone);
 }
 
-function handleRecoMoodStep(phone, text, state) {
+async function handleRecoMoodStep(phone, text, state) {
   const mood = parseRecoMood(text);
 
   if (!mood) {
-    return sendTextAndReturn(
-      phone,
-      `Elige una opción válida:\n\n1. Antojo del día\n2. Cumpleaños o celebración\n3. Para compartir en familia u oficina\n4. No sé, muéstrame lo más pedido\n\n_Escribe "atrás" para volver._`
-    );
+    return sendRecoMoodQuestion(phone);
   }
 
   state.recoMood = mood;
@@ -1315,24 +1354,45 @@ function handleRecoMoodStep(phone, text, state) {
   state.step = "SHOW_RECOMMENDATIONS";
   states.set(phone, state);
 
-  const productList = recommendedProducts
-    .map((product, index) => `${index + 1}. ${product.name} — ${formatPrice(product.price)}\n${product.description}`)
-    .join("\n\n");
-
-  return sendTextAndReturn(
-    phone,
-    `Según lo que me cuentas, esto te puede gustar:\n\n${productList}\n\n¿Cuál te gustaría agregar a tu pedido?\n\nResponde con el número de la opción 😊\n\n_Escribe "atrás" para volver._`
-  );
+  return sendRecommendationsList(phone, recommendedProducts);
 }
 
-function handleRecommendationSelectionStep(phone, text, state) {
-  const selectedIndex = Number(text);
+function sendRecommendationsList(phone, recommendedProducts) {
+  return sendWhatsAppList(
+    phone,
+    `Según lo que me cuentas, esto te puede gustar 😊\n\n¿Cuál quieres agregar a tu pedido?\n\n_Escribe "atrás" para volver._`,
+    "Ver recomendaciones",
+    [
+      {
+        title: "Recomendados",
+        rows: recommendedProducts.map((product) => ({
+          id: `prod_${product.id}`,
+          title: product.name.slice(0, 24),
+          description: formatPrice(product.price)
+        }))
+      }
+    ],
+    "⭐ Para ti"
+  ).then(() => "lista de recomendaciones enviada");
+}
 
-  if (!Number.isInteger(selectedIndex) || selectedIndex < 1 || selectedIndex > state.recommendedProducts.length) {
-    return sendTextAndReturn(phone, "Por favor responde con el número de la opción que quieres agregar 😊\n\n_Escribe \"atrás\" para volver._");
+async function handleRecommendationSelectionStep(phone, text, state) {
+  const list = state.recommendedProducts || [];
+  let selectedProduct = null;
+
+  if (text.startsWith("prod_")) {
+    const id = Number(text.replace("prod_", ""));
+    selectedProduct = list.find((product) => product.id === id) || null;
+  } else {
+    const index = Number(text);
+    if (Number.isInteger(index) && index >= 1 && index <= list.length) {
+      selectedProduct = list[index - 1];
+    }
   }
 
-  const selectedProduct = state.recommendedProducts[selectedIndex - 1];
+  if (!selectedProduct) {
+    return sendRecommendationsList(phone, list);
+  }
 
   state.selectedProduct = selectedProduct;
   state.step = "ASK_QUANTITY";
@@ -1385,19 +1445,20 @@ function getRecommendations(state) {
 }
 
 function parseRecoCategory(text) {
-  if (text === "1" || text.includes("pan")) return "pan";
-  if (text === "2" || text.includes("pastel") || text.includes("torta")) return "pastel";
-  if (text === "3" || text.includes("postre")) return "postre";
-  if (text === "4" || text.includes("bebida")) return "bebida";
-  if (text === "5" || text.includes("sorprend")) return "sorpresa";
+  if (text === "reco_cat_pan" || text === "1" || text === "pan") return "pan";
+  if (text === "reco_cat_pastel" || text === "2" || text.includes("pastel") || text.includes("torta")) return "pastel";
+  if (text === "reco_cat_postre" || text === "3" || text.includes("postre")) return "postre";
+  if (text === "reco_cat_bebida" || text === "4" || text.includes("bebida")) return "bebida";
+  if (text === "reco_cat_sorpresa" || text === "5" || text.includes("sorpr")) return "sorpresa";
+  if (text.includes("pan")) return "pan";
   return null;
 }
 
 function parseRecoMood(text) {
-  if (text === "1" || text.includes("antojo")) return "antojo";
-  if (text === "2" || text.includes("cumple")) return "cumpleanos";
-  if (text === "3" || text.includes("compartir")) return "compartir";
-  if (text === "4" || text.includes("no se") || text.includes("no sé") || text.includes("pedido")) return "populares";
+  if (text === "reco_mood_antojo" || text === "1" || text.includes("antojo")) return "antojo";
+  if (text === "reco_mood_cumpleanos" || text === "2" || text.includes("cumple") || text.includes("celebra")) return "cumpleanos";
+  if (text === "reco_mood_compartir" || text === "3" || text.includes("compartir") || text.includes("familia") || text.includes("oficina")) return "compartir";
+  if (text === "reco_mood_populares" || text === "4" || text.includes("popular") || text.includes("pedido") || text.includes("no s")) return "populares";
   return null;
 }
 
