@@ -1,7 +1,7 @@
 // whatsapp.js
-// Aquí se conecta el bot con la API de WhatsApp Cloud de Meta.
+// Aqui se conecta el bot con la API de WhatsApp Cloud de Meta.
 // Las credenciales (token y phone number id) se leen desde el archivo .env,
-// nunca se escriben directamente aquí.
+// nunca se escriben directamente aqui.
 
 import dotenv from "dotenv";
 dotenv.config({ override: true });
@@ -13,7 +13,7 @@ const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
 async function callGraphApi(payload) {
   if (!PHONE_NUMBER_ID || !WHATSAPP_TOKEN) {
     console.log(
-      "⚠️ Faltan WHATSAPP_PHONE_NUMBER_ID o WHATSAPP_TOKEN en el .env. No se envió el mensaje:",
+      "⚠ Faltan WHATSAPP_PHONE_NUMBER_ID o WHATSAPP_TOKEN en el .env. No se envio el mensaje:",
       JSON.stringify(payload)
     );
     return null;
@@ -46,7 +46,7 @@ async function callGraphApi(payload) {
   } catch (error) {
     clearTimeout(timeout);
     if (error.name === "AbortError") {
-      console.error("❌ Timeout: WhatsApp API no respondió en 15s");
+      console.error("❌ Timeout: WhatsApp API no respondio en 15s");
     } else {
       console.error("❌ Error en fetch a WhatsApp:", error.message);
     }
@@ -67,7 +67,7 @@ export async function sendWhatsAppMessage(phone, text) {
 }
 
 // ---------------------------------------------------------------------------
-// 2. MENSAJE CON BOTONES (máximo 3)
+// 2. MENSAJE CON BOTONES (maximo 3)
 // ---------------------------------------------------------------------------
 export async function sendWhatsAppButtons(phone, bodyText, buttons, header, footer) {
   const safeButtons = (buttons || []).slice(0, 3).map((b) => ({
@@ -97,7 +97,7 @@ export async function sendWhatsAppButtons(phone, bodyText, buttons, header, foot
 }
 
 // ---------------------------------------------------------------------------
-// 3. MENSAJE CON LISTA DESPLEGABLE (máximo 10 filas)
+// 3. MENSAJE CON LISTA DESPLEGABLE (maximo 10 filas)
 // ---------------------------------------------------------------------------
 export async function sendWhatsAppList(phone, bodyText, buttonLabel, sections, header, footer) {
   const safeSections = (sections || []).slice(0, 10).map((section) => ({

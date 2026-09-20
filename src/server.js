@@ -12,7 +12,7 @@ const PORT = process.env.PORT || 3000;
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || "cambia_este_token";
 
 app.get("/", (req, res) => {
-  res.send("Bot de la panadería funcionando ✅");
+  res.send("Bot de la panaderia funcionando ✅");
 });
 
 app.get("/health", (_req, res) => {
@@ -109,15 +109,15 @@ app.post("/make", async (req, res) => {
       return res.status(200).json({
         ok: false,
         error: "No hay mensaje",
-        respuesta: "No recibí ningún mensaje para procesar."
+        respuesta: "No recibi ningun mensaje para procesar."
       });
     }
 
     if (!phone) {
       return res.status(200).json({
         ok: false,
-        error: "No hay número de remitente",
-        respuesta: "No pude identificar el número del remitente."
+        error: "No hay numero de remitente",
+        respuesta: "No pude identificar el numero del remitente."
       });
     }
 
@@ -127,7 +127,7 @@ app.post("/make", async (req, res) => {
       ? botResult
       : (botResult && typeof botResult === "object")
         ? "Mensaje recibido y procesado correctamente."
-        : "Lo siento, no encontré información sobre eso.";
+        : "Lo siento, no encontre informacion sobre eso.";
 
     return res.status(200).json({ ok: true, respuesta });
   } catch (error) {
@@ -153,13 +153,13 @@ app.post("/render", (req, res) => {
 
 app.get("/privacidad", (req, res) => {
   res.type("html").send(`
-    <h1>Política de Privacidad — Bot Panadería Molinos</h1>
-    <p>Este chatbot de WhatsApp usa la información que nos compartes
-    (nombre, número de teléfono, dirección y detalles del pedido)
-    únicamente para gestionar tu pedido y comunicarnos contigo.</p>
+    <h1>Politica de Privacidad - Bot Panaderia Molinos</h1>
+    <p>Este chatbot de WhatsApp usa la informacion que nos compartes
+    (nombre, numero de telefono, direccion y detalles del pedido)
+    unicamente para gestionar tu pedido y comunicarnos contigo.</p>
     <p>No compartimos tus datos con terceros distintos a los necesarios
-    para procesar el pedido. No usamos tu información con fines publicitarios.</p>
-    <p>Puedes solicitar la eliminación de tus datos escribiéndonos
+    para procesar el pedido. No usamos tu informacion con fines publicitarios.</p>
+    <p>Puedes solicitar la eliminacion de tus datos escribiendonos
     directamente por este mismo chat.</p>
     <p>Contacto: camiloproyectos14@gmail.com</p>
   `);
@@ -203,5 +203,5 @@ app.post("/webhook", async (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log(`🥐 Bot de la panadería escuchando en el puerto ${PORT}`);
+  console.log(`🥐 Bot de la panaderia escuchando en el puerto ${PORT}`);
 });

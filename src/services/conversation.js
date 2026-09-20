@@ -1,5 +1,5 @@
-﻿// conversation.js
-// Lógica completa del bot con flujo de domiciliarios, botones y comando "atrás".
+// conversation.js
+// Logica completa del bot con flujo de domiciliarios, botones y comando "atras".
 
 import {
   sendWhatsAppMessage,
@@ -13,9 +13,9 @@ import { notifyMake } from "./notify.js";
 
 const states = new Map();
 
-const BAKERY_NAME = process.env.BAKERY_NAME || "Panadería Molinos";
+const BAKERY_NAME = process.env.BAKERY_NAME || "Panaderia Molinos";
 const BAKERY_ADDRESS =
-  process.env.BAKERY_ADDRESS || "Calle Principal #12-34, Tuluá, Valle del Cauca";
+  process.env.BAKERY_ADDRESS || "Calle Principal #12-34, Tulua, Valle del Cauca";
 const HUMAN_ATTENTION_SCHEDULE =
   process.env.HUMAN_ATTENTION_SCHEDULE || "7:00 a.m. a 7:00 p.m.";
 
@@ -35,27 +35,27 @@ const GREETINGS = [
 ];
 
 const MENU_COMMANDS = [
-  "menu", "menú", "mnue", "meu", "men", "mnu", "mwnu", "menu principal",
+  "menu", "menu", "mnue", "meu", "men", "mnu", "mwnu", "menu principal",
   "inicio", "empezar", "empezemos", "comenzar", "reiniciar", "reset", "info",
-  "informacion", "información", "ayuda", "help", "opciones", "opciones principales",
-  "que puedo hacer", "qué puedo hacer", "mostrar menu", "ver menu", "ver opciones"
+  "informacion", "informacion", "ayuda", "help", "opciones", "opciones principales",
+  "que puedo hacer", "que puedo hacer", "mostrar menu", "ver menu", "ver opciones"
 ];
 
 const BACK_COMMANDS = [
-  "atras", "atrás", "atraz", "atrass", "atrazz", "volver", "regresar", "regresa",
+  "atras", "atras", "atraz", "atrass", "atrazz", "volver", "regresar", "regresa",
   "back", "anterior", "previo", "before", "regresar atras", "volver atras", "vover", "bolver"
 ];
 
 const YES_WORDS = [
-  "si", "sí", "s", "yes", "yep", "yap", "sep", "sipi", "claro", "claroo",
+  "si", "si", "s", "yes", "yep", "yap", "sep", "sipi", "claro", "claroo",
   "ok", "okey", "okay", "okis", "dale", "listo", "afirmativo", "correcto",
   "acepto", "aceptar", "confirmo", "confirmar", "por supuesto", "obvio",
-  "obviamente", "si señor", "si claro", "asi es", "así es", "otro", "agregar"
+  "obviamente", "si senor", "si claro", "asi es", "asi es", "otro", "agregar"
 ];
 
 const NO_WORDS = [
   "no", "n", "nop", "nope", "nel", "neles", "para nada", "nunca", "negativo",
-  "cancelar", "cancela", "saltar", "omitir", "luego", "despues", "después",
+  "cancelar", "cancela", "saltar", "omitir", "luego", "despues", "despues",
   "ahorita no", "no gracias", "no por ahora", "continuar", "finalizar"
 ];
 
@@ -110,7 +110,7 @@ function normalize(text) {
     .toLowerCase()
     .normalize("NFD")
     .replace(/[\u0300-\u036f]/g, "")
-    .replace(/[¿?¡!.,;:()\[\]{}"']/g, "")
+    .replace(/[?!.,;:()\[\]{}"']/g, "")
     .replace(/\s+/g, " ");
 }
 
@@ -255,7 +255,7 @@ function isExactCommand(text, words) {
   return words.some((word) => normalizedText === normalize(word));
 }
 
-// Historial de pasos para el comando "atrás"
+// Historial de pasos para el comando "atras"
 const STEPS_HISTORY = {
   MAIN_MENU: null,
   CATEGORY_SELECTED: "MAIN_MENU",
@@ -299,7 +299,7 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
   if (!text && isTextLike) {
     return sendTextAndReturn(
       phone,
-      "No alcancé a leer tu mensaje. ¿Me escribes nuevamente, por favor? 😊"
+      "No alcance a leer tu mensaje. Me escribes nuevamente, por favor? 😊"
     );
   }
 
@@ -323,7 +323,7 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
     states.set(phone, state);
     return sendTextAndReturn(
       phone,
-      "Estás en medio de un pedido. ¿Quieres cancelarlo y volver al menú?\n\nResponde *sí* para cancelar o *no* para continuar."
+      "Estas en medio de un pedido. Quieres cancelarlo y volver al menu?\n\nResponde *si* para cancelar o *no* para continuar."
     );
   }
 
@@ -348,7 +348,7 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
       });
       return sendTextAndReturn(
         phone,
-        `No estoy seguro de haber entendido 🤔\n\n¿Quisiste decir *${suggestion}*?\n\nResponde *sí* para continuar o escribe *menu* para ver las opciones.`
+        `No estoy seguro de haber entendido 🤔\n\nQuisiste decir *${suggestion}*?\n\nResponde *si* para continuar o escribe *menu* para ver las opciones.`
       );
     }
   }
@@ -373,7 +373,7 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
 
     if (matchesKeyword(text, ORDER_KEYWORDS)) {
       const freshState = getFreshState(phone);
-      return askProductName(phone, freshState, "Claro 😊 ¿Qué te gustaría pedir? Escríbeme el nombre del producto, por ejemplo: Croissant, Torta de chocolate, Café.");
+      return askProductName(phone, freshState, "Claro 😊 Que te gustaria pedir? Escribeme el nombre del producto, por ejemplo: Croissant, Torta de chocolate, Cafe.");
     }
 
     if (matchesKeyword(text, RECOMMEND_KEYWORDS)) {
@@ -390,7 +390,7 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
 
     if (matchesKeyword(text, NEGATIVE_KNOWLEDGE)) {
       getFreshState(phone);
-      return sendTextAndReturn(phone, "Por ahora no manejamos esa opción. Escribe *menu* para ver lo que sí tenemos disponible.");
+      return sendTextAndReturn(phone, "Por ahora no manejamos esa opcion. Escribe *menu* para ver lo que si tenemos disponible.");
     }
 
     if (shouldUseAi(text)) {
@@ -465,7 +465,7 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
       getFreshState(phone);
       return sendTextAndReturn(
         phone,
-        "Ya quedó registrado ✅ Si deseas hacer otro pedido, escribe *menu*."
+        "Ya quedo registrado ✅ Si deseas hacer otro pedido, escribe *menu*."
       );
     }
 
@@ -507,7 +507,7 @@ async function handleCancelConfirmationStep(phone, text, state) {
     return resendStepPrompt(phone, state);
   }
 
-  return sendTextAndReturn(phone, "Responde *sí* para cancelar el pedido o *no* para continuar.");
+  return sendTextAndReturn(phone, "Responde *si* para cancelar el pedido o *no* para continuar.");
 }
 
 function resendStepPrompt(phone, state) {
@@ -519,23 +519,23 @@ function resendStepPrompt(phone, state) {
         ? showProductListByCategory(phone, state, state.currentCategory)
         : sendCarta(phone, state);
     case "PRODUCT_FOUND":
-      return sendTextAndReturn(phone, "Escríbeme el nombre del producto que deseas buscar, o escribe *menu* para ver las opciones.");
+      return sendTextAndReturn(phone, "Escribeme el nombre del producto que deseas buscar, o escribe *menu* para ver las opciones.");
     case "ASK_QUANTITY":
-      return sendTextAndReturn(phone, `¿Cuántas unidades deseas agregar de *${state.selectedProduct.name}*?`);
+      return sendTextAndReturn(phone, `Cuantas unidades deseas agregar de *${state.selectedProduct.name}*?`);
     case "ASK_NOTE":
-      return sendTextAndReturn(phone, "¿Deseas agregar una nota al producto?");
+      return sendTextAndReturn(phone, "Deseas agregar una nota al producto?");
     case "ASK_NOTE_TEXT":
-      return sendTextAndReturn(phone, `Escribe la nota o indicación especial para *${state.selectedProduct.name}*.`);
+      return sendTextAndReturn(phone, `Escribe la nota o indicacion especial para *${state.selectedProduct.name}*.`);
     case "ASK_ADD_MORE":
       return sendAddMoreButtons(phone, state);
     case "ASK_CUSTOMER_NAME":
-      return sendTextAndReturn(phone, "¿Me regalas tu nombre completo, por favor?");
+      return sendTextAndReturn(phone, "Me regalas tu nombre completo, por favor?");
     case "ASK_PHONE":
-      return sendTextAndReturn(phone, "¿A qué número te podemos llamar?");
+      return sendTextAndReturn(phone, "A que numero te podemos llamar?");
     case "ASK_ADDRESS":
-      return sendTextAndReturn(phone, "¿Cuál es la dirección de entrega?");
+      return sendTextAndReturn(phone, "Cual es la direccion de entrega?");
     case "ASK_NEIGHBORHOOD":
-      return sendTextAndReturn(phone, "¿En qué barrio queda?");
+      return sendTextAndReturn(phone, "En que barrio queda?");
     case "ASK_PAYMENT_METHOD":
       return sendPaymentQuestion(phone);
     case "ASK_RECO_CATEGORY":
@@ -551,32 +551,32 @@ function resendStepPrompt(phone, state) {
 
 function sendNonTextResponse(phone, messageType) {
   const responses = {
-    image: "Recibí tu imagen 📷, pero solo proceso texto. ¿Me escribes lo que necesitas?",
-    audio: "Recibí tu audio 🎤, pero solo proceso texto. ¿Me escribes lo que necesitas?",
-    voice: "Recibí tu audio 🎤, pero solo proceso texto. ¿Me escribes lo que necesitas?",
-    sticker: "¡Bonito sticker! 😄 Solo proceso texto. ¿En qué te ayudo?",
-    location: "Recibí tu ubicación 📍. Si quieres pedir a domicilio, escribe *menu*.",
-    video: "Recibí tu video 🎥, pero solo proceso texto.",
-    document: "Recibí tu documento 📄, pero solo proceso texto."
+    image: "Recibi tu imagen 📷, pero solo proceso texto. Me escribes lo que necesitas?",
+    audio: "Recibi tu audio 🎤, pero solo proceso texto. Me escribes lo que necesitas?",
+    voice: "Recibi tu audio 🎤, pero solo proceso texto. Me escribes lo que necesitas?",
+    sticker: "Bonito sticker! 😄 Solo proceso texto. En que te ayudo?",
+    location: "Recibi tu ubicacion 📍. Si quieres pedir a domicilio, escribe *menu*.",
+    video: "Recibi tu video 🎥, pero solo proceso texto.",
+    document: "Recibi tu documento 📄, pero solo proceso texto."
   };
 
-  return sendTextAndReturn(phone, responses[messageType] || "Recibí tu mensaje, pero solo proceso texto.");
+  return sendTextAndReturn(phone, responses[messageType] || "Recibi tu mensaje, pero solo proceso texto.");
 }
 
 // ---------------------------------------------------------------------------
-// COMANDO "ATRÁS" — vuelve al paso anterior
+// COMANDO "ATRAS" - vuelve al paso anterior
 // ---------------------------------------------------------------------------
 async function handleBack(phone) {
   const state = states.get(phone);
 
   if (!state || state.step === "MAIN_MENU") {
-    return sendTextAndReturn(phone, "Ya estás en el menú principal. Escribe *menu* para ver las opciones.");
+    return sendTextAndReturn(phone, "Ya estas en el menu principal. Escribe *menu* para ver las opciones.");
   }
 
   const previousStep = STEPS_HISTORY[state.step];
 
   if (!previousStep) {
-    return sendTextAndReturn(phone, "No puedo retroceder más. Escribe *menu* para reiniciar.");
+    return sendTextAndReturn(phone, "No puedo retroceder mas. Escribe *menu* para reiniciar.");
   }
 
   state.step = previousStep;
@@ -600,31 +600,31 @@ async function handleBack(phone) {
       if (state.selectedProduct) {
         return sendTextAndReturn(
           phone,
-          `Volviste al paso anterior.\n\nProducto: *${state.selectedProduct.name}*\nPrecio: ${formatPrice(state.selectedProduct.price)}\n\n¿Cuántas unidades deseas agregar?`
+          `Volviste al paso anterior.\n\nProducto: *${state.selectedProduct.name}*\nPrecio: ${formatPrice(state.selectedProduct.price)}\n\nCuantas unidades deseas agregar?`
         );
       }
       return sendMainMenu(phone);
 
     case "ASK_NOTE":
-      return sendTextAndReturn(phone, "¿Deseas agregar una nota al producto?");
+      return sendTextAndReturn(phone, "Deseas agregar una nota al producto?");
 
     case "ASK_ADD_MORE":
       return sendTextAndReturn(
         phone,
-        `${buildCartSummary(state)}\n\n¿Deseas agregar otro producto al pedido?`
+        `${buildCartSummary(state)}\n\nDeseas agregar otro producto al pedido?`
       );
 
     case "ASK_CUSTOMER_NAME":
-      return sendTextAndReturn(phone, "¿Me regalas tu nombre, por favor?");
+      return sendTextAndReturn(phone, "Me regalas tu nombre, por favor?");
 
     case "ASK_PHONE":
-      return sendTextAndReturn(phone, "¿A qué número te podemos llamar?");
+      return sendTextAndReturn(phone, "A que numero te podemos llamar?");
 
     case "ASK_ADDRESS":
-      return sendTextAndReturn(phone, "¿Cuál es la dirección de entrega?");
+      return sendTextAndReturn(phone, "Cual es la direccion de entrega?");
 
     case "ASK_NEIGHBORHOOD":
-      return sendTextAndReturn(phone, "¿En qué barrio queda?");
+      return sendTextAndReturn(phone, "En que barrio queda?");
 
     case "ASK_PAYMENT_METHOD":
       return sendPaymentQuestion(phone);
@@ -644,7 +644,7 @@ async function handleBack(phone) {
 }
 
 // ---------------------------------------------------------------------------
-// MENÚ PRINCIPAL
+// MENU PRINCIPAL
 // ---------------------------------------------------------------------------
 
 async function sendMainMenu(phone) {
@@ -658,9 +658,9 @@ async function sendMainMenu(phone) {
         rows: [
           { id: "menu_ver_carta", title: "Ver la carta", description: "Revisa todos nuestros productos" },
           { id: "menu_hacer_pedido", title: "Hacer un pedido", description: "Agrega productos al carrito" },
-          { id: "menu_recomendar", title: "Recomiéndame algo", description: "Sugerencias según tu antojo" },
-          { id: "menu_horarios", title: "Horarios y ubicación", description: "Dirección y horario de atención" },
-          { id: "menu_asesor", title: "Hablar con alguien", description: "Atención personalizada" }
+          { id: "menu_recomendar", title: "Recomiendame algo", description: "Sugerencias segun tu antojo" },
+          { id: "menu_horarios", title: "Horarios y ubicacion", description: "Direccion y horario de atencion" },
+          { id: "menu_asesor", title: "Hablar con alguien", description: "Atencion personalizada" }
         ]
       }
     ],
@@ -680,7 +680,7 @@ async function handleMainMenuStep(phone, text, rawText, state) {
     return askProductName(
       phone,
       state,
-      "Claro 😊 ¿Qué te gustaría pedir? Escríbeme el nombre del producto, por ejemplo: Croissant, Torta de chocolate, Café."
+      "Claro 😊 Que te gustaria pedir? Escribeme el nombre del producto, por ejemplo: Croissant, Torta de chocolate, Cafe."
     );
   }
 
@@ -694,7 +694,7 @@ async function handleMainMenuStep(phone, text, rawText, state) {
   if (text === "menu_horarios") {
     return sendTextAndReturn(
       phone,
-      `📍 Estamos en: ${BAKERY_ADDRESS}\n\n🕒 Horario de atención: ${HUMAN_ATTENTION_SCHEDULE}\n\nEscribe *menu* para ver las opciones de nuevo.`
+      `📍 Estamos en: ${BAKERY_ADDRESS}\n\n🕒 Horario de atencion: ${HUMAN_ATTENTION_SCHEDULE}\n\nEscribe *menu* para ver las opciones de nuevo.`
     );
   }
 
@@ -708,7 +708,7 @@ async function handleMainMenuStep(phone, text, rawText, state) {
 
   if (text === "2" || matchesKeyword(text, ORDER_KEYWORDS)) {
     state.cart = [];
-    return askProductName(phone, state, "Claro 😊 ¿Qué te gustaría pedir? Escríbeme el nombre del producto, por ejemplo: Croissant, Torta de chocolate, Café.");
+    return askProductName(phone, state, "Claro 😊 Que te gustaria pedir? Escribeme el nombre del producto, por ejemplo: Croissant, Torta de chocolate, Cafe.");
   }
 
   if (text === "3" || matchesKeyword(text, RECOMMEND_KEYWORDS)) {
@@ -721,7 +721,7 @@ async function handleMainMenuStep(phone, text, rawText, state) {
   if (text === "4" || matchesKeyword(text, HOURS_KEYWORDS) || matchesKeyword(text, LOCATION_KEYWORDS)) {
     return sendTextAndReturn(
       phone,
-      `📍 Estamos en: ${BAKERY_ADDRESS}\n\n🕒 Horario de atención: ${HUMAN_ATTENTION_SCHEDULE}\n\nEscribe *menu* para ver las opciones de nuevo.`
+      `📍 Estamos en: ${BAKERY_ADDRESS}\n\n🕒 Horario de atencion: ${HUMAN_ATTENTION_SCHEDULE}\n\nEscribe *menu* para ver las opciones de nuevo.`
     );
   }
 
@@ -753,7 +753,7 @@ async function handleMainMenuStep(phone, text, rawText, state) {
 
 
 // ---------------------------------------------------------------------------
-// CARTA COMO LISTA — Categorías → Productos
+// CARTA COMO LISTA - Categorias -> Productos
 // ---------------------------------------------------------------------------
 
 async function sendCarta(phone, state) {
@@ -761,20 +761,20 @@ async function sendCarta(phone, state) {
   const filename = process.env.CATALOG_FILE_NAME || `Carta ${BAKERY_NAME}.pdf`;
 
   if (mediaId) {
-    await sendWhatsAppDocument(phone, mediaId, filename, "Aquí tienes nuestra carta actualizada 😊");
+    await sendWhatsAppDocument(phone, mediaId, filename, "Aqui tienes nuestra carta actualizada 😊");
     state.step = "PRODUCT_FOUND";
     state.waitingForProductName = true;
     states.set(phone, state);
-    return sendTextAndReturn(phone, "Cuando veas algo que te guste, escríbeme el nombre para agregarlo a tu pedido 😊");
+    return sendTextAndReturn(phone, "Cuando veas algo que te guste, escribeme el nombre para agregarlo a tu pedido 😊");
   }
 
   await sendWhatsAppList(
     phone,
-    "Elige una categoría para ver los productos:",
-    "Ver categorías",
+    "Elige una categoria para ver los productos:",
+    "Ver categorias",
     [
       {
-        title: "Categorías",
+        title: "Categorias",
         rows: Object.keys(CATEGORY_LABELS).map((cat) => ({
           id: `cat_${cat}`,
           title: CATEGORY_LABELS[cat],
@@ -789,14 +789,14 @@ async function sendCarta(phone, state) {
   state.cart = state.cart || [];
   states.set(phone, state);
 
-  return "carta enviada como lista de categorías";
+  return "carta enviada como lista de categorias";
 }
 
 async function handleCategorySelectedStep(phone, text, state) {
   const category = text.replace("cat_", "");
 
   if (!CATEGORY_LABELS[category]) {
-    return sendTextAndReturn(phone, "Categoría no válida. Escribe *menu* para empezar de nuevo.");
+    return sendTextAndReturn(phone, "Categoria no valida. Escribe *menu* para empezar de nuevo.");
   }
 
   return showProductListByCategory(phone, state, category);
@@ -806,7 +806,7 @@ async function showProductListByCategory(phone, state, category) {
   const categoryProducts = products.filter((p) => p.available && p.category === category);
 
   if (categoryProducts.length === 0) {
-    return sendTextAndReturn(phone, "No hay productos disponibles en esta categoría por ahora 😅");
+    return sendTextAndReturn(phone, "No hay productos disponibles en esta categoria por ahora 😅");
   }
 
   await sendWhatsAppList(
@@ -838,7 +838,7 @@ async function handleProductSelectedStep(phone, text, state) {
   const product = products.find((p) => p.id === productId);
 
   if (!product) {
-    return sendTextAndReturn(phone, "No encontré ese producto 😅 Escribe *menu* para empezar de nuevo.");
+    return sendTextAndReturn(phone, "No encontre ese producto 😅 Escribe *menu* para empezar de nuevo.");
   }
 
   state.selectedProduct = product;
@@ -847,18 +847,18 @@ async function handleProductSelectedStep(phone, text, state) {
 
   return sendTextAndReturn(
     phone,
-    `Seleccionaste: *${product.name}*\n${product.description}\nPrecio: ${formatPrice(product.price)}\n\n¿Cuántas unidades deseas agregar?\n\n_Escribe "atrás" para volver._`
+    `Seleccionaste: *${product.name}*\n${product.description}\nPrecio: ${formatPrice(product.price)}\n\nCuantas unidades deseas agregar?\n\n_Escribe "atras" para volver._`
   );
 }
 
 // ---------------------------------------------------------------------------
-// BÚSQUEDA Y SELECCIÓN DE PRODUCTO (flujo de texto)
+// BUSQUEDA Y SELECCION DE PRODUCTO (flujo de texto)
 // ---------------------------------------------------------------------------
 
 function buildMenuText() {
   const sections = Object.keys(CATEGORY_LABELS).map((category) => {
     const items = products.filter((p) => p.available && p.category === category);
-    const lines = items.map((product) => `• ${product.name} — ${formatPrice(product.price)}`).join("\n");
+    const lines = items.map((product) => `- ${product.name} - ${formatPrice(product.price)}`).join("\n");
     return `*${CATEGORY_LABELS[category]}*\n${lines}`;
   });
 
@@ -878,7 +878,7 @@ function offerProductHelp(phone, state) {
   state.waitingForProductName = true;
   states.set(phone, state);
 
-  return sendTextAndReturn(phone, "No encontré ese producto 😅 Escribe el nombre de otro o escribe *menu* para reiniciar.");
+  return sendTextAndReturn(phone, "No encontre ese producto 😅 Escribe el nombre de otro o escribe *menu* para reiniciar.");
 }
 
 async function sendAiHelpOrFallback(phone, text, state, nextStep) {
@@ -940,7 +940,7 @@ async function handleProductFoundStep(phone, text, state) {
   const selectedIndex = Number(text);
 
   if (!Number.isInteger(selectedIndex) || selectedIndex < 1 || selectedIndex > state.foundProducts.length) {
-    return sendTextAndReturn(phone, "Por favor responde con el número del producto que quieres agregar 😊");
+    return sendTextAndReturn(phone, "Por favor responde con el numero del producto que quieres agregar 😊");
   }
 
   const selectedProduct = state.foundProducts[selectedIndex - 1];
@@ -951,30 +951,30 @@ async function handleProductFoundStep(phone, text, state) {
 
   return sendTextAndReturn(
     phone,
-    `Seleccionaste: *${selectedProduct.name}*\nPrecio: ${formatPrice(selectedProduct.price)}\n\n¿Cuántas unidades deseas agregar?\n\n_Escribe "atrás" para volver._`
+    `Seleccionaste: *${selectedProduct.name}*\nPrecio: ${formatPrice(selectedProduct.price)}\n\nCuantas unidades deseas agregar?\n\n_Escribe "atras" para volver._`
   );
 }
 
 function sendProductSearchResults(phone, foundProducts) {
   const productList = foundProducts
-    .map((product, index) => `${index + 1}. ${product.name} — ${formatPrice(product.price)}\n${product.description}`)
+    .map((product, index) => `${index + 1}. ${product.name} - ${formatPrice(product.price)}\n${product.description}`)
     .join("\n\n");
 
   return sendTextAndReturn(
     phone,
-    `Encontré estas opciones:\n\n${productList}\n\n¿Cuál te gustaría agregar a tu pedido?\n\nResponde con el número de la opción 😊`
+    `Encontre estas opciones:\n\n${productList}\n\nCual te gustaria agregar a tu pedido?\n\nResponde con el numero de la opcion 😊`
   );
 }
 
 // ---------------------------------------------------------------------------
-// CANTIDAD → NOTA → AGREGAR MÁS
+// CANTIDAD -> NOTA -> AGREGAR MAS
 // ---------------------------------------------------------------------------
 
 async function handleQuantityStep(phone, text, state) {
   const quantity = Number(text);
 
   if (!Number.isInteger(quantity) || quantity < 1) {
-    return sendTextAndReturn(phone, "Por favor dime cuántas unidades deseas. Ejemplo: 1, 2, 3...\n\n_Escribe \"atrás\" para volver._");
+    return sendTextAndReturn(phone, "Por favor dime cuantas unidades deseas. Ejemplo: 1, 2, 3...\n\n_Escribe \"atras\" para volver._");
   }
 
   state.pendingQuantity = quantity;
@@ -983,10 +983,10 @@ async function handleQuantityStep(phone, text, state) {
 
   await sendWhatsAppButtons(
     phone,
-    `Perfecto, ${quantity} unidad(es) de *${state.selectedProduct.name}*.\n\n¿Deseas agregar alguna nota o indicación especial?`,
+    `Perfecto, ${quantity} unidad(es) de *${state.selectedProduct.name}*.\n\nDeseas agregar alguna nota o indicacion especial?`,
     [
       { id: "note_no", title: "No, sin notas" },
-      { id: "note_yes", title: "Sí, agregar nota" }
+      { id: "note_yes", title: "Si, agregar nota" }
     ],
     "📝 Nota del producto"
   );
@@ -1005,13 +1005,13 @@ async function handleNoteStep(phone, text, rawText, state) {
     return sendAddMoreButtons(phone, state);
   }
 
-  if (text === "note_yes" || text === "si" || text === "sí" || text.includes("agregar nota")) {
+  if (text === "note_yes" || text === "si" || text === "si" || text.includes("agregar nota")) {
     state.step = "ASK_NOTE_TEXT";
     states.set(phone, state);
-    return sendTextAndReturn(phone, `Escribe la nota o indicación especial para *${state.selectedProduct.name}*.\n\n_Escribe "atrás" para volver._`);
+    return sendTextAndReturn(phone, `Escribe la nota o indicacion especial para *${state.selectedProduct.name}*.\n\n_Escribe "atras" para volver._`);
   }
 
-  // Por si escriben la nota directamente sin pulsar el botón
+  // Por si escriben la nota directamente sin pulsar el boton
   state.note = text.trim();
   addProductToCart(state, state.selectedProduct, state.pendingQuantity, state.note);
   state.pendingQuantity = null;
@@ -1025,7 +1025,7 @@ async function handleNoteTextStep(phone, rawText, state) {
   const note = rawText.trim();
 
   if (note.length < 1) {
-    return sendTextAndReturn(phone, "Por favor escribe la nota o indicación.\n\n_Escribe \"atrás\" para volver._");
+    return sendTextAndReturn(phone, "Por favor escribe la nota o indicacion.\n\n_Escribe \"atras\" para volver._");
   }
 
   state.note = note;
@@ -1040,7 +1040,7 @@ async function handleNoteTextStep(phone, rawText, state) {
 async function sendAddMoreButtons(phone, state) {
   await sendWhatsAppButtons(
     phone,
-    `${buildCartSummary(state)}\n\n¿Qué deseas hacer ahora?`,
+    `${buildCartSummary(state)}\n\nQue deseas hacer ahora?`,
     [
       { id: "add_more", title: "Agregar producto" },
       { id: "finalize", title: "Finalizar orden" }
@@ -1053,7 +1053,7 @@ async function sendAddMoreButtons(phone, state) {
 
 async function handleAddMoreStep(phone, text, state) {
   if (text === "add_more" || isYes(text)) {
-    return askProductName(phone, state, "Perfecto 😊 ¿Qué otro producto deseas agregar? Escríbeme el nombre o escribe *menu* para ver la carta.");
+    return askProductName(phone, state, "Perfecto 😊 Que otro producto deseas agregar? Escribeme el nombre o escribe *menu* para ver la carta.");
   }
 
   if (text === "finalize" || isNo(text)) {
@@ -1062,13 +1062,13 @@ async function handleAddMoreStep(phone, text, state) {
 
     return sendTextAndReturn(
       phone,
-      `${buildCartSummary(state)}\n\nPara registrar tu pedido necesito algunos datos.\n\n¿Me regalas tu *nombre completo*, por favor?\n\n_Escribe "atrás" para volver._`
+      `${buildCartSummary(state)}\n\nPara registrar tu pedido necesito algunos datos.\n\nMe regalas tu *nombre completo*, por favor?\n\n_Escribe "atras" para volver._`
     );
   }
 
   return sendTextAndReturn(
     phone,
-    `Por favor elige una opción:\n\n• Escribe *agregar* para añadir otro producto\n• Escribe *finalizar* para continuar con tus datos`
+    `Por favor elige una opcion:\n\n- Escribe *agregar* para anadir otro producto\n- Escribe *finalizar* para continuar con tus datos`
   );
 }
 
@@ -1113,7 +1113,7 @@ function buildCartSummary(state) {
   const cartLines = state.cart
     .map((item, index) => {
       const note = item.note ? `\n   📝 ${item.note}` : "";
-      return `${index + 1}. ${item.product.name} x${item.quantity} — ${formatPrice(item.subtotal)}${note}`;
+      return `${index + 1}. ${item.product.name} x${item.quantity} - ${formatPrice(item.subtotal)}${note}`;
     })
     .join("\n");
 
@@ -1121,14 +1121,14 @@ function buildCartSummary(state) {
 }
 
 // ---------------------------------------------------------------------------
-// DATOS DEL CLIENTE — Nombre, teléfono, dirección, barrio
+// DATOS DEL CLIENTE - Nombre, telefono, direccion, barrio
 // ---------------------------------------------------------------------------
 
 function handleCustomerNameStep(phone, rawText, state) {
   const name = rawText.trim();
 
   if (name.length < 2 || isInvalidText(name)) {
-    return sendTextAndReturn(phone, "Por favor escríbeme tu nombre completo. Ejemplo: Fabián Pérez 😊\n\n_Escribe \"atrás\" para volver._");
+    return sendTextAndReturn(phone, "Por favor escribeme tu nombre completo. Ejemplo: Fabian Perez 😊\n\n_Escribe \"atras\" para volver._");
   }
 
   state.customerName = capitalizeWords(name);
@@ -1137,12 +1137,12 @@ function handleCustomerNameStep(phone, rawText, state) {
 
   return sendTextAndReturn(
     phone,
-    `Gracias, ${state.customerName} 😊\n\n¿A qué número te podemos llamar cuando el domiciliario esté en camino?\n\n_Escribe *mismo* para usar este mismo WhatsApp (${phone})._\n\n_Escribe "atrás" para volver._`
+    `Gracias, ${state.customerName} 😊\n\nA que numero te podemos llamar cuando el domiciliario este en camino?\n\n_Escribe *mismo* para usar este mismo WhatsApp (${phone})._\n\n_Escribe "atras" para volver._`
   );
 }
 
 function handlePhoneStep(phone, text, rawText, state) {
-  // Si responde "mismo" o "este", usar el mismo número de WhatsApp
+  // Si responde "mismo" o "este", usar el mismo numero de WhatsApp
   if (text === "mismo" || text === "este" || text === "mi numero" || text === "el mismo") {
     state.contactPhone = phone;
   } else {
@@ -1151,7 +1151,7 @@ function handlePhoneStep(phone, text, rawText, state) {
     if (cleanNumber.length < 7) {
       return sendTextAndReturn(
         phone,
-        `No entendí bien el número. Escríbelo completo, por ejemplo: 3001234567.\n\nO escribe *mismo* para usar este WhatsApp (${phone}).\n\n_Escribe "atrás" para volver._`
+        `No entendi bien el numero. Escribelo completo, por ejemplo: 3001234567.\n\nO escribe *mismo* para usar este WhatsApp (${phone}).\n\n_Escribe "atras" para volver._`
       );
     }
 
@@ -1163,7 +1163,7 @@ function handlePhoneStep(phone, text, rawText, state) {
 
   return sendTextAndReturn(
     phone,
-    `Perfecto 📞\n\nAhora dime la *dirección de entrega* (calle, carrera, número, torre, apto, etc.):\n\nEjemplo: Calle 10 # 20-30, Torre 2, Apto 301\n\n_Escribe "atrás" para volver._`
+    `Perfecto 📞\n\nAhora dime la *direccion de entrega* (calle, carrera, numero, torre, apto, etc.):\n\nEjemplo: Calle 10 # 20-30, Torre 2, Apto 301\n\n_Escribe "atras" para volver._`
   );
 }
 
@@ -1173,7 +1173,7 @@ function handleAddressStep(phone, rawText, state) {
   if (address.length < 5 || isInvalidText(address)) {
     return sendTextAndReturn(
       phone,
-      `Por favor escríbeme una dirección más completa.\n\nEjemplo: Calle 10 # 20-30, Torre 2, Apto 301\n\n_Escribe "atrás" para volver._`
+      `Por favor escribeme una direccion mas completa.\n\nEjemplo: Calle 10 # 20-30, Torre 2, Apto 301\n\n_Escribe "atras" para volver._`
     );
   }
 
@@ -1183,7 +1183,7 @@ function handleAddressStep(phone, rawText, state) {
 
   return sendTextAndReturn(
     phone,
-    `Anotado ✅\n\n¿En qué *barrio* queda?\n\n_Escribe "atrás" para volver._`
+    `Anotado ✅\n\nEn que *barrio* queda?\n\n_Escribe "atras" para volver._`
   );
 }
 
@@ -1193,7 +1193,7 @@ function handleNeighborhoodStep(phone, rawText, state) {
   if (neighborhood.length < 2 || isInvalidText(neighborhood)) {
     return sendTextAndReturn(
       phone,
-      `Por favor escríbeme el nombre del barrio.\n\n_Escribe "atrás" para volver._`
+      `Por favor escribeme el nombre del barrio.\n\n_Escribe "atras" para volver._`
     );
   }
 
@@ -1207,19 +1207,19 @@ function handleNeighborhoodStep(phone, rawText, state) {
 async function sendPaymentQuestion(phone) {
   await sendWhatsAppButtons(
     phone,
-    "¿Cómo prefieres pagar tu pedido?",
+    "Como prefieres pagar tu pedido?",
     [
       { id: "pay_cash", title: "Efectivo" },
       { id: "pay_transfer", title: "Transferencia" }
     ],
-    "💵 Método de pago"
+    "💵 Metodo de pago"
   );
 
   return "pregunta de pago enviada";
 }
 
 // ---------------------------------------------------------------------------
-// PAGO Y CONFIRMACIÓN FINAL
+// PAGO Y CONFIRMACION FINAL
 // ---------------------------------------------------------------------------
 
 async function handlePaymentMethodStep(phone, text, state) {
@@ -1238,7 +1238,7 @@ async function handlePaymentMethodStep(phone, text, state) {
   if (!paymentMethod) {
     return sendTextAndReturn(
       phone,
-      `Elige una opción válida usando los botones, o escribe:\n\n1. Transferencia\n2. Efectivo\n\n_Escribe "atrás" para volver._`
+      `Elige una opcion valida usando los botones, o escribe:\n\n1. Transferencia\n2. Efectivo\n\n_Escribe "atras" para volver._`
     );
   }
 
@@ -1266,17 +1266,17 @@ async function handlePaymentMethodStep(phone, text, state) {
 
   console.log("\n📦 PEDIDO NUEVO");
   console.log(JSON.stringify(orderPayload, null, 2));
-  console.log("Estado: pendiente de confirmación\n");
+  console.log("Estado: pendiente de confirmacion\n");
 
   await notifyMake("nuevo_pedido", orderPayload);
 
   const paymentLine = paymentMethod === "transferencia"
-    ? `💳 Pago: Transferencia\n\nTransfiere a:\n${PAYMENT_INFO.bank} — ${PAYMENT_INFO.accountNumber}\nTitular: ${PAYMENT_INFO.holderName}\n\nEnvía el comprobante por este chat.`
+    ? `💳 Pago: Transferencia\n\nTransfiere a:\n${PAYMENT_INFO.bank} - ${PAYMENT_INFO.accountNumber}\nTitular: ${PAYMENT_INFO.holderName}\n\nEnvia el comprobante por este chat.`
     : `💵 Pago: Efectivo contraentrega`;
 
   return sendTextAndReturn(
     phone,
-    `Listo, ${state.customerName} ✅ Tu pedido quedó registrado:\n\n${buildCartSummary(state)}\n\n📋 *Datos de entrega*\n👤 Nombre: ${state.customerName}\n📞 Llamar al: ${state.contactPhone}\n🏠 Dirección: ${state.address}\n📍 Barrio: ${state.neighborhood}\n\n${paymentLine}\n\nGracias por preferir a ${BAKERY_NAME} 🥐`
+    `Listo, ${state.customerName} ✅ Tu pedido quedo registrado:\n\n${buildCartSummary(state)}\n\n📋 *Datos de entrega*\n👤 Nombre: ${state.customerName}\n📞 Llamar al: ${state.contactPhone}\n🏠 Direccion: ${state.address}\n📍 Barrio: ${state.neighborhood}\n\n${paymentLine}\n\nGracias por preferir a ${BAKERY_NAME} 🥐`
   );
 }
 
@@ -1287,41 +1287,41 @@ async function handlePaymentMethodStep(phone, text, state) {
 function sendRecoCategoryQuestion(phone) {
   return sendWhatsAppList(
     phone,
-    `¿Qué se te antoja hoy? 😊\n\nElige una opción de la lista, o escribe el número (1 a 5).\n\n_Escribe "atrás" para volver._`,
-    "Elegir categoría",
+    `Que se te antoja hoy? 😊\n\nElige una opcion de la lista, o escribe el numero (1 a 5).\n\n_Escribe "atras" para volver._`,
+    "Elegir categoria",
     [
       {
-        title: "Categorías",
+        title: "Categorias",
         rows: [
           { id: "reco_cat_pan", title: "🥐 Pan", description: "Panes y croissants" },
           { id: "reco_cat_pastel", title: "🎂 Pasteles o tortas", description: "Tortas y cheesecakes" },
-          { id: "reco_cat_postre", title: "🍮 Postres", description: "Algo dulce y rápido" },
-          { id: "reco_cat_bebida", title: "☕ Bebidas", description: "Para acompañar" },
-          { id: "reco_cat_sorpresa", title: "🎁 Sorpréndeme", description: "Yo elijo por ti" }
+          { id: "reco_cat_postre", title: "🍮 Postres", description: "Algo dulce y rapido" },
+          { id: "reco_cat_bebida", title: "☕ Bebidas", description: "Para acompanar" },
+          { id: "reco_cat_sorpresa", title: "🎁 Sorprendeme", description: "Yo elijo por ti" }
         ]
       }
     ],
     "✨ Recomendaciones"
-  ).then(() => "lista de categorías reco enviada");
+  ).then(() => "lista de categorias reco enviada");
 }
 
 function sendRecoMoodQuestion(phone) {
   return sendWhatsAppList(
     phone,
-    `¿Para qué ocasión es? 🎉\n\nElige una opción de la lista, o escribe el número (1 a 4).\n\n_Escribe "atrás" para volver._`,
-    "Elegir ocasión",
+    `Para que ocasion es? 🎉\n\nElige una opcion de la lista, o escribe el numero (1 a 4).\n\n_Escribe "atras" para volver._`,
+    "Elegir ocasion",
     [
       {
         title: "Ocasiones",
         rows: [
-          { id: "reco_mood_antojo", title: "😋 Antojo del día", description: "Porciones individuales" },
-          { id: "reco_mood_cumpleanos", title: "🎂 Cumpleaños", description: "Celebraciones y eventos" },
+          { id: "reco_mood_antojo", title: "😋 Antojo del dia", description: "Porciones individuales" },
+          { id: "reco_mood_cumpleanos", title: "🎂 Cumpleanos", description: "Celebraciones y eventos" },
           { id: "reco_mood_compartir", title: "👨‍👩‍👧 Para compartir", description: "Familia u oficina" },
-          { id: "reco_mood_populares", title: "⭐ Lo más pedido", description: "Los favoritos de todos" }
+          { id: "reco_mood_populares", title: "⭐ Lo mas pedido", description: "Los favoritos de todos" }
         ]
       }
     ],
-    "🎉 Ocasión"
+    "🎉 Ocasion"
   ).then(() => "lista de ocasiones reco enviada");
 }
 
@@ -1360,7 +1360,7 @@ async function handleRecoMoodStep(phone, text, state) {
 function sendRecommendationsList(phone, recommendedProducts) {
   return sendWhatsAppList(
     phone,
-    `Según lo que me cuentas, esto te puede gustar 😊\n\n¿Cuál quieres agregar a tu pedido?\n\n_Escribe "atrás" para volver._`,
+    `Segun lo que me cuentas, esto te puede gustar 😊\n\nCual quieres agregar a tu pedido?\n\n_Escribe "atras" para volver._`,
     "Ver recomendaciones",
     [
       {
@@ -1400,7 +1400,7 @@ async function handleRecommendationSelectionStep(phone, text, state) {
 
   return sendTextAndReturn(
     phone,
-    `Seleccionaste: *${selectedProduct.name}*\nPrecio: ${formatPrice(selectedProduct.price)}\n\n¿Cuántas unidades deseas agregar?\n\n_Escribe "atrás" para volver._`
+    `Seleccionaste: *${selectedProduct.name}*\nPrecio: ${formatPrice(selectedProduct.price)}\n\nCuantas unidades deseas agregar?\n\n_Escribe "atras" para volver._`
   );
 }
 
@@ -1471,7 +1471,7 @@ function handleHumanHandoff(phone) {
 
   return sendTextAndReturn(
     phone,
-    `Claro 😊 Puedo dejar tu solicitud registrada para que alguien del equipo te escriba.\n\nNuestro horario de atención es de ${HUMAN_ATTENTION_SCHEDULE}.\n\n¿Me regalas tu nombre, por favor?`
+    `Claro 😊 Puedo dejar tu solicitud registrada para que alguien del equipo te escriba.\n\nNuestro horario de atencion es de ${HUMAN_ATTENTION_SCHEDULE}.\n\nMe regalas tu nombre, por favor?`
   );
 }
 
@@ -1479,14 +1479,14 @@ function handleLeadNameStep(phone, rawText, state) {
   const name = rawText.trim();
 
   if (name.length < 2) {
-    return sendTextAndReturn(phone, "¿Me regalas tu nombre, por favor? 😊");
+    return sendTextAndReturn(phone, "Me regalas tu nombre, por favor? 😊");
   }
 
   state.customerName = capitalizeWords(name);
   state.step = "ASK_LEAD_NEED";
   states.set(phone, state);
 
-  return sendTextAndReturn(phone, `Gracias, ${state.customerName}. ¿En qué te podemos ayudar?`);
+  return sendTextAndReturn(phone, `Gracias, ${state.customerName}. En que te podemos ayudar?`);
 }
 
 async function handleLeadNeedStep(phone, rawText, state) {
@@ -1500,15 +1500,15 @@ async function handleLeadNeedStep(phone, rawText, state) {
     need: state.need
   };
 
-  console.log("\n📩 SOLICITUD DE ATENCIÓN PERSONALIZADA");
+  console.log("\n📩 SOLICITUD DE ATENCION PERSONALIZADA");
   console.log(JSON.stringify(leadPayload, null, 2));
-  console.log("Estado: pendiente de revisión por el equipo\n");
+  console.log("Estado: pendiente de revision por el equipo\n");
 
   await notifyMake("solicitud_atencion", leadPayload);
 
   return sendTextAndReturn(
     phone,
-    `Gracias, ${state.customerName} ✅ Dejamos tu solicitud registrada:\n\n${state.need}\n\nAlguien del equipo revisará este chat en horario de atención. Gracias por escribirnos 😊`
+    `Gracias, ${state.customerName} ✅ Dejamos tu solicitud registrada:\n\n${state.need}\n\nAlguien del equipo revisara este chat en horario de atencion. Gracias por escribirnos 😊`
   );
 }
 
@@ -1561,14 +1561,14 @@ function isMainMenuRequest(text) {
 function shouldUseAi(text) {
   if (!text || text.length < 4) return false;
 
-  const directOptions = ["1", "2", "3", "4", "5", "si", "sí", "no"];
+  const directOptions = ["1", "2", "3", "4", "5", "si", "si", "no"];
   if (directOptions.includes(text)) return false;
 
   const aiKeywords = [
-    "quiero", "busco", "recomienda", "recomiendame", "recomiéndame",
-    "cumpleanos", "cumpleaños", "cumple", "sin gluten", "gluten",
+    "quiero", "busco", "recomienda", "recomiendame", "recomiendame",
+    "cumpleanos", "cumpleanos", "cumple", "sin gluten", "gluten",
     "vegano", "alergia", "dulce", "salado", "economico", "barato",
-    "compartir", "personas", "cual es", "cuál es", "mejor", "rico",
+    "compartir", "personas", "cual es", "cual es", "mejor", "rico",
     "rica", "antojo", "domicilio", "hacen", "tienen", "como", "cuando", "donde",
     "por que", "personalizada", "encargo"
   ];

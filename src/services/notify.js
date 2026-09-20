@@ -1,11 +1,11 @@
 // notify.js
-// Integración OPCIONAL con Make (make.com).
+// Integracion OPCIONAL con Make (make.com).
 // Si defines MAKE_WEBHOOK_URL en tu .env, cada pedido nuevo o solicitud de
-// atención se envía también a ese webhook, para que tu escenario de Make
+// atencion se envia tambien a ese webhook, para que tu escenario de Make
 // haga lo que necesites: guardarlo en Google Sheets, avisarte por Telegram,
 // enviarte un correo, etc.
 //
-// Si no defines MAKE_WEBHOOK_URL, esta función simplemente no hace nada y
+// Si no defines MAKE_WEBHOOK_URL, esta funcion simplemente no hace nada y
 // el bot sigue funcionando normal.
 
 import dotenv from "dotenv";
@@ -27,6 +27,6 @@ export async function notifyMake(event, data) {
       })
     });
   } catch (error) {
-    console.error("⚠️ No se pudo notificar a Make:", error.message);
+    console.error("⚠ No se pudo notificar a Make:", error.message);
   }
 }
