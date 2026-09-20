@@ -42,6 +42,10 @@ const MENU_COMMANDS = [
   "que puedo hacer", "que puedo hacer", "mostrar menu", "ver menu", "ver opciones"
 ];
 
+const CANCEL_ORDER_WORDS = [
+  "cancelar", "cancela", "cancelar pedido", "cancelar orden", "cancelar todo"
+];
+
 const BACK_COMMANDS = [
   "atras", "atras", "atraz", "atrass", "atrazz", "volver", "regresar", "regresa",
   "back", "anterior", "previo", "before", "regresar atras", "volver atras", "vover", "bolver"
@@ -104,6 +108,13 @@ const ADVANCED_FLOW_STEPS = new Set([
   "ASK_NEIGHBORHOOD", "ASK_PAYMENT_METHOD", "ASK_RECO_CATEGORY", "ASK_RECO_MOOD",
   "SHOW_RECOMMENDATIONS", "ASK_LEAD_NAME", "ASK_LEAD_NEED"
 ]);
+
+function cleanInbound(text) {
+  return String(text ?? "")
+    .replace(/\u00A8/g, "")
+    .replace(/\{\{|\}\}/g, "")
+    .trim();
+}
 
 function normalize(text) {
   return String(text || "")
@@ -289,7 +300,7 @@ async function sendTextAndReturn(phone, text) {
 }
 
 export async function handleIncomingMessage(phone, message, messageType = "text") {
-  const rawText = String(message || "").trim();
+  const rawText = cleanInbound(message);
   const text = normalize(rawText);
 
   if (isAdvisor(phone)) {
@@ -337,7 +348,11 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
     return handleBack(phone);
   }
 
-  if (state && ADVANCED_FLOW_STEPS.has(state.step) && (isGreetingLike(text) || isMenuCommand(text))) {
+  if (
+    state &&
+    ADVANCED_FLOW_STEPS.has(state.step) &&
+    (isGreetingLike(text) || isMenuCommand(text) || CANCEL_ORDER_WORDS.includes(text))
+  ) {
     state.previousStep = state.step;
     state.step = "CONFIRM_CANCEL_ORDER";
     states.set(phone, state);
@@ -514,7 +529,7 @@ async function handleConfirmSuggestionStep(phone, text, state) {
 }
 
 async function handleCancelConfirmationStep(phone, text, state) {
-  if (isYes(text)) {
+  if (isYes(text) || CANCEL_ORDER_WORDS.includes(text)) {
     getFreshState(phone);
     return sendMainMenu(phone);
   }
@@ -539,7 +554,7 @@ function resendStepPrompt(phone, state) {
         ? showProductListByCategory(phone, state, state.currentCategory)
         : sendCarta(phone, state);
     case "PRODUCT_FOUND":
-      return sendTextAndReturn(phone, "Escribeme el nombre del producto que deseas buscar, o escribe *menu* para ver las opciones.");
+      return sendTextAndReturn(phone, "Escribeme el nombre del producto que deseas buscar, o escribe *carta* para ver los productos.");
     case "ASK_QUANTITY":
       return sendTextAndReturn(phone, `Cuantas unidades deseas agregar de *${state.selectedProduct.name}*?`);
     case "ASK_NOTE":
@@ -820,7 +835,7 @@ async function handleCategorySelectedStep(phone, text, state) {
   const category = text.replace("cat_", "");
 
   if (!CATEGORY_LABELS[category]) {
-    return sendTextAndReturn(phone, "Categoria no valida. Escribe *menu* para empezar de nuevo.");
+    return sendTextAndReturn(phone, "Categoria no valida. Escribe *cancelar* para salir del pedido.");
   }
 
   return showProductListByCategory(phone, state, category);
@@ -862,7 +877,7 @@ async function handleProductSelectedStep(phone, text, state) {
   const product = products.find((p) => p.id === productId);
 
   if (!product) {
-    return sendTextAndReturn(phone, "No encontre ese producto 😅 Escribe *menu* para empezar de nuevo.");
+    return sendTextAndReturn(phone, "No encontre ese producto 😅 Escribe *cancelar* para salir del pedido.");
   }
 
   state.selectedProduct = product;
@@ -902,7 +917,7 @@ function offerProductHelp(phone, state) {
   state.waitingForProductName = true;
   states.set(phone, state);
 
-  return sendTextAndReturn(phone, "No encontre ese producto 😅 Escribe el nombre de otro o escribe *menu* para reiniciar.");
+  return sendTextAndReturn(phone, "No encontre ese producto 😅 Escribe el nombre de otro, o *carta* para ver los productos.");
 }
 
 async function sendAiHelpOrFallback(phone, text, state, nextStep) {
@@ -1077,7 +1092,7 @@ async function sendAddMoreButtons(phone, state) {
 
 async function handleAddMoreStep(phone, text, state) {
   if (text === "add_more" || isYes(text)) {
-    return askProductName(phone, state, "Perfecto 😊 Que otro producto deseas agregar? Escribeme el nombre o escribe *menu* para ver la carta.");
+    return askProductName(phone, state, "Perfecto 😊 Que otro producto deseas agregar? Escribeme el nombre o escribe *carta* para ver los productos.\n\n_Escribe *cancelar* si quieres cancelar el pedido._");
   }
 
   if (text === "finalize" || isNo(text)) {
