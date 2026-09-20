@@ -1,4 +1,4 @@
-// conversation.js
+﻿// conversation.js
 // Logica completa del bot con flujo de domiciliarios, botones y comando "atras".
 
 import {
@@ -12,6 +12,7 @@ import { getAiSalesResponse } from "./ai.js";
 import { notifyMake } from "./notify.js";
 
 const states = new Map();
+const HANDOFF_TTL_MS = 4 * 60 * 60 * 1000;
 
 const BAKERY_NAME = process.env.BAKERY_NAME || "Panaderia Molinos";
 const BAKERY_ADDRESS =
@@ -271,6 +272,8 @@ const STEPS_HISTORY = {
   ASK_RECO_CATEGORY: "MAIN_MENU",
   ASK_RECO_MOOD: "ASK_RECO_CATEGORY",
   SHOW_RECOMMENDATIONS: "ASK_RECO_MOOD",
+  ASK_LEAD_NAME: "MAIN_MENU",
+  ASK_LEAD_NEED: "ASK_LEAD_NAME",
   CONFIRM_CANCEL_ORDER: null
 };
 
@@ -288,6 +291,23 @@ async function sendTextAndReturn(phone, text) {
 export async function handleIncomingMessage(phone, message, messageType = "text") {
   const rawText = String(message || "").trim();
   const text = normalize(rawText);
+
+  if (isAdvisor(phone)) {
+    return handleAdvisorCommand(phone, text);
+  }
+
+  const currentState = states.get(phone);
+
+  if (currentState?.step === "HUMAN_HANDOFF") {
+    const expired = Date.now() - (currentState.handoffAt || 0) > HANDOFF_TTL_MS;
+
+    if (expired || text === "menu") {
+      states.delete(phone);
+      return sendMainMenu(phone);
+    }
+
+    return "bot en pausa: atiende un asesor";
+  }
 
   if (!isBotAllowedToRespond()) {
     console.log(`Mensaje recibido fuera del horario del bot. Cliente: ${phone}`);
@@ -307,7 +327,7 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
     return sendNonTextResponse(phone, messageType);
   }
 
-  const state = states.get(phone);
+  const state = currentState;
 
   if (state?.step === "CONFIRM_CANCEL_ORDER") {
     return handleCancelConfirmationStep(phone, text, state);
@@ -455,13 +475,13 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
       return handleRecommendationSelectionStep(phone, text, state);
 
     case "ASK_LEAD_NAME":
-      return handleLeadNameStep(phone, rawText, state);
+      return handleLeadNameStep(phone, text, rawText, state);
 
     case "ASK_LEAD_NEED":
-      return handleLeadNeedStep(phone, rawText, state);
+      return handleLeadNeedStep(phone, text, rawText, state);
 
     case "ORDER_CONFIRMED":
-    case "LEAD_REGISTERED": {
+    {
       getFreshState(phone);
       return sendTextAndReturn(
         phone,
@@ -544,6 +564,10 @@ function resendStepPrompt(phone, state) {
       return sendRecoMoodQuestion(phone);
     case "SHOW_RECOMMENDATIONS":
       return sendRecommendationsList(phone, state.recommendedProducts || []);
+    case "ASK_LEAD_NAME":
+      return handleHumanHandoff(phone);
+    case "ASK_LEAD_NEED":
+      return sendLeadNeedQuestion(phone, state.customerName || "");
     default:
       return sendMainMenu(phone);
   }
@@ -1463,52 +1487,177 @@ function parseRecoMood(text) {
 }
 
 // ---------------------------------------------------------------------------
-// HABLAR CON UNA PERSONA DEL EQUIPO
+// ASESOR HUMANO
 // ---------------------------------------------------------------------------
 
-function handleHumanHandoff(phone) {
-  states.set(phone, { step: "ASK_LEAD_NAME", cart: [], history: [] });
+const LEAD_NEED_MAP = {
+  lead_torta: "Torta personalizada",
+  lead_evento: "Evento o pedido grande",
+  lead_reclamo: "Reclamo o problema con un pedido",
+  "1": "Torta personalizada",
+  "2": "Evento o pedido grande",
+  "3": "Reclamo o problema con un pedido"
+};
+
+function getAdvisorPhone() {
+  return (process.env.ADVISOR_PHONE || "").replace(/\D/g, "");
+}
+
+function isAdvisor(phone) {
+  const advisor = getAdvisorPhone();
+  return advisor.length > 0 && String(phone).replace(/\D/g, "") === advisor;
+}
+
+function getOpenCases() {
+  return [...states.entries()]
+    .filter(([, state]) => state.step === "HUMAN_HANDOFF")
+    .map(([phone, state]) => ({
+      phone,
+      name: state.customerName || "Cliente",
+      need: state.need || "",
+      since: state.handoffAt || 0
+    }));
+}
+
+async function handleHumanHandoff(phone) {
+  const state = states.get(phone) || { cart: [] };
+  state.step = "ASK_LEAD_NAME";
+  states.set(phone, state);
 
   return sendTextAndReturn(
     phone,
-    `Claro 😊 Puedo dejar tu solicitud registrada para que alguien del equipo te escriba.\n\nNuestro horario de atencion es de ${HUMAN_ATTENTION_SCHEDULE}.\n\nMe regalas tu nombre, por favor?`
+    `Claro 😊 Dejo tu solicitud registrada para que alguien del equipo te atienda por este mismo chat.\n\nHorario de atencion: ${HUMAN_ATTENTION_SCHEDULE}\n\nComo te llamas?\n\n_Escribe "atras" para volver._`
   );
 }
 
-function handleLeadNameStep(phone, rawText, state) {
-  const name = rawText.trim();
+async function handleLeadNameStep(phone, text, rawText, state) {
+  const name = (rawText || text || "").trim();
 
-  if (name.length < 2) {
-    return sendTextAndReturn(phone, "Me regalas tu nombre, por favor? 😊");
+  if (name.length < 2 || /^\d+$/.test(name)) {
+    return sendTextAndReturn(phone, "Escribeme tu nombre, por favor 😊");
   }
 
-  state.customerName = capitalizeWords(name);
+  state.customerName = name.slice(0, 60);
   state.step = "ASK_LEAD_NEED";
   states.set(phone, state);
 
-  return sendTextAndReturn(phone, `Gracias, ${state.customerName}. En que te podemos ayudar?`);
+  return sendLeadNeedQuestion(phone, state.customerName);
 }
 
-async function handleLeadNeedStep(phone, rawText, state) {
-  state.need = rawText.trim();
-  state.step = "LEAD_REGISTERED";
+function sendLeadNeedQuestion(phone, name) {
+  return sendWhatsAppList(
+    phone,
+    `Gracias, ${name} 😊 En que te podemos ayudar?\n\nElige una opcion, o escribeme directamente lo que necesitas.\n\n_Escribe "atras" para volver._`,
+    "Elegir motivo",
+    [
+      {
+        title: "Motivos",
+        rows: [
+          { id: "lead_torta", title: "🎂 Torta personalizada", description: "Disenos y sabores a tu gusto" },
+          { id: "lead_evento", title: "🎉 Evento o pedido", description: "Cumpleanos, oficina, reuniones" },
+          { id: "lead_reclamo", title: "⚠️ Reclamo o problema", description: "Algo salio mal con un pedido" },
+          { id: "lead_otro", title: "💬 Otro", description: "Cuentanos que necesitas" }
+        ]
+      }
+    ],
+    "👤 Hablar con un asesor"
+  ).then(() => "lista de motivos asesor enviada");
+}
+
+async function handleLeadNeedStep(phone, text, rawText, state) {
+  if (text === "lead_otro") {
+    return sendTextAndReturn(phone, "Cuentame en un mensaje que necesitas y lo dejo anotado para el equipo ✍️");
+  }
+
+  const need = LEAD_NEED_MAP[text] || (rawText || text || "").trim();
+
+  if (need.length < 3) {
+    return sendLeadNeedQuestion(phone, state.customerName || "");
+  }
+
+  state.need = need.slice(0, 300);
+  state.step = "HUMAN_HANDOFF";
+  state.handoffAt = Date.now();
   states.set(phone, state);
 
-  const leadPayload = {
+  await sendTextAndReturn(
     phone,
-    customerName: state.customerName,
-    need: state.need
-  };
+    `Listo, ${state.customerName} ✅ Tu solicitud quedo registrada:\n\n📝 ${state.need}\n\nUn asesor te escribira por este mismo chat.\nHorario de atencion: ${HUMAN_ATTENTION_SCHEDULE}\n\n_Mientras te atienden no respondere automaticamente. Si quieres volver al asistente, escribe *menu*._`
+  );
 
-  console.log("\n📩 SOLICITUD DE ATENCION PERSONALIZADA");
-  console.log(JSON.stringify(leadPayload, null, 2));
-  console.log("Estado: pendiente de revision por el equipo\n");
+  try {
+    const advisor = getAdvisorPhone();
+    if (advisor) {
+      await sendTextAndReturn(
+        advisor,
+        `🔔 *Cliente necesita atencion*\n\n👤 ${state.customerName}\n📝 ${state.need}\n📞 Numero: +${phone}\n\nBusca ese chat en WhatsApp Business y respondele.\n\nCuando termines, escribeme aqui:\n*FINALIZADO ${phone}*`
+      );
+    }
+  } catch (error) {
+    console.error("No se pudo avisar al asesor por WhatsApp:", error.message);
+  }
 
-  await notifyMake("solicitud_atencion", leadPayload);
+  try {
+    await notifyMake("solicitud_atencion", {
+      customerName: state.customerName,
+      phone,
+      need: state.need,
+      createdAt: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error("No se pudo notificar a Make:", error.message);
+  }
+
+  return "solicitud de asesor registrada";
+}
+
+async function handleAdvisorCommand(phone, text) {
+  const command = (text || "").trim().toLowerCase();
+  const open = getOpenCases();
+
+  if (command.startsWith("finalizado")) {
+    const digits = command.replace(/\D/g, "");
+    let target = null;
+
+    if (digits) {
+      target = open.find((item) => item.phone === digits || item.phone.endsWith(digits));
+    } else if (open.length === 1) {
+      target = open[0];
+    } else if (open.length > 1) {
+      const list = open.map((item) => `- ${item.name}: FINALIZADO ${item.phone}`).join("\n");
+      return sendTextAndReturn(phone, `Tienes ${open.length} casos abiertos. Indica cual cerrar:\n\n${list}`);
+    }
+
+    if (!target) {
+      return sendTextAndReturn(phone, "No encontre un caso abierto con ese numero 🤔\nEscribe *casos* para ver los pendientes.");
+    }
+
+    states.delete(target.phone);
+
+    try {
+      await sendTextAndReturn(
+        target.phone,
+        `Gracias por esperar${target.name ? ", " + target.name : ""} 😊 Ya quedo atendida tu solicitud.\n\nSi mas tarde quieres volver a usar el asistente, escribe *menu*.`
+      );
+    } catch (error) {
+      console.error("No se pudo avisar al cliente del cierre:", error.message);
+    }
+
+    return sendTextAndReturn(phone, `✅ Caso de ${target.name} (+${target.phone}) finalizado. El bot quedo reactivado para ese cliente.`);
+  }
+
+  if (command === "casos") {
+    if (open.length === 0) {
+      return sendTextAndReturn(phone, "No hay casos abiertos ✅");
+    }
+
+    const list = open.map((item) => `- ${item.name} (+${item.phone}) - ${item.need}\n  FINALIZADO ${item.phone}`).join("\n\n");
+    return sendTextAndReturn(phone, `📋 Casos abiertos (${open.length}):\n\n${list}`);
+  }
 
   return sendTextAndReturn(
     phone,
-    `Gracias, ${state.customerName} ✅ Dejamos tu solicitud registrada:\n\n${state.need}\n\nAlguien del equipo revisara este chat en horario de atencion. Gracias por escribirnos 😊`
+    `👋 Panel de asesor\n\n- *casos* -> ver casos abiertos\n- *FINALIZADO 57XXXXXXXXXX* -> cerrar un caso y reactivar el bot para ese cliente\n\nCasos abiertos ahora: ${open.length}`
   );
 }
 
