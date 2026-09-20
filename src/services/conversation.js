@@ -291,14 +291,16 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
     return;
   }
 
-  if (!text && messageType === "text") {
+  const isTextLike = messageType === "text" || messageType === "interactive";
+
+  if (!text && isTextLike) {
     return sendTextAndReturn(
       phone,
       "No alcancé a leer tu mensaje. ¿Me escribes nuevamente, por favor? 😊"
     );
   }
 
-  if (messageType !== "text") {
+  if (!isTextLike) {
     return sendNonTextResponse(phone, messageType);
   }
 

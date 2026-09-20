@@ -19,19 +19,12 @@ app.get("/health", (_req, res) => {
   res.status(200).send("OK");
 });
 
-function extractIncomingText(message) {
+function extractMessageContent(message) {
   if (!message) return null;
 
-  if (message.interactive) {
-    const interactive = message.interactive;
-
-    if (interactive.list_reply) {
-      return interactive.list_reply.id ?? interactive.list_reply.title ?? null;
-    }
-
-    if (interactive.button_reply) {
-      return interactive.button_reply.id ?? interactive.button_reply.title ?? null;
-    }
+  if (message.type === "interactive" && message.interactive) {
+    const reply = message.interactive.list_reply || message.interactive.button_reply;
+    if (reply?.id) return reply.id;
   }
 
   if (message.text?.body !== undefined) {
@@ -47,14 +40,14 @@ function extractInboundMessage(payload) {
   if (metaMessage) {
     return {
       phone: metaMessage.from,
-      text: extractIncomingText(metaMessage),
+      text: extractMessageContent(metaMessage),
       type: metaMessage.type || "text"
     };
   }
 
   const simpleMessage = payload.messages?.[0];
   const text =
-    extractIncomingText(simpleMessage) ??
+    extractMessageContent(simpleMessage) ??
     payload.message ??
     payload.text ??
     payload.body ??
@@ -166,7 +159,7 @@ app.post("/webhook", async (req, res) => {
     console.log("📨 Mensaje recibido:", JSON.stringify(message, null, 2));
 
     const phone = message.from;
-    const text = extractIncomingText(message);
+    const text = extractMessageContent(message);
 
     if (message.type === "text" && (!text || !String(text).trim())) return;
 
