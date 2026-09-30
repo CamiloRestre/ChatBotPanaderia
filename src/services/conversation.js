@@ -108,7 +108,8 @@ const NEGATIVE_KNOWLEDGE = ["no tengo", "no manejamos", "no vendemos", "no hacem
 const ADVANCED_FLOW_STEPS = new Set([
   "CATEGORY_SELECTED", "PRODUCT_LIST_SHOWN", "PRODUCT_FOUND", "ASK_QUANTITY", "ASK_NOTE",
   "ASK_NOTE_TEXT", "ASK_ADD_MORE", "ASK_CUSTOMER_NAME", "ASK_PHONE", "ASK_ADDRESS",
-  "ASK_NEIGHBORHOOD", "ASK_CONTACT_PHONE", "ASK_OTHER_PHONE", "ASK_PAYMENT_METHOD",
+  "ASK_DELIVERY_METHOD", "ASK_NEIGHBORHOOD", "ASK_CONTACT_PHONE", "ASK_OTHER_PHONE",
+  "ASK_PAYMENT_METHOD",
   "ASK_RECO_CATEGORY", "ASK_RECO_MOOD",
   "SHOW_RECOMMENDATIONS", "ASK_LEAD_NAME", "ASK_LEAD_NEED"
 ]);
@@ -274,7 +275,8 @@ const STEPS_HISTORY = {
   ASK_ADD_MORE: "ASK_NOTE",
   ASK_CUSTOMER_NAME: "ASK_ADD_MORE",
   ASK_PHONE: "ASK_CUSTOMER_NAME",
-  ASK_ADDRESS: "ASK_PHONE",
+  ASK_DELIVERY_METHOD: "ASK_CUSTOMER_NAME",
+  ASK_ADDRESS: "ASK_DELIVERY_METHOD",
   ASK_NEIGHBORHOOD: "ASK_ADDRESS",
   ASK_CONTACT_PHONE: "ASK_NEIGHBORHOOD",
   ASK_OTHER_PHONE: "ASK_CONTACT_PHONE",
@@ -325,19 +327,16 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
     return handleBack(phone);
   }
 
-  if (isExactCommand(text, [...GREETINGS, ...MENU_COMMANDS])) {
-    getFreshState(phone);
-    return sendMainMenu(phone);
-  }
-
   if (state && ADVANCED_FLOW_STEPS.has(state.step) && (isGreetingLike(text) || isMenuCommand(text))) {
     state.previousStep = state.step;
     state.step = "CONFIRM_CANCEL_ORDER";
     states.set(phone, state);
-    return sendTextAndReturn(
-      phone,
-      "Estás en medio de un pedido. ¿Quieres cancelarlo y volver al menú?\n\nResponde *sí* para cancelar o *no* para continuar."
-    );
+    return sendCancelOrderQuestion(phone);
+  }
+
+  if (isExactCommand(text, [...GREETINGS, ...MENU_COMMANDS])) {
+    getFreshState(phone);
+    return sendMainMenu(phone);
   }
 
   if (isExactCommand(text, HUMAN_KEYWORDS) || isHumanRequest(text)) {
@@ -444,6 +443,9 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
     case "ASK_PHONE":
       return handlePhoneStep(phone, text, rawText, state);
 
+    case "ASK_DELIVERY_METHOD":
+      return handleDeliveryMethodStep(phone, text, state);
+
     case "ASK_ADDRESS":
       return handleAddressStep(phone, rawText, state);
 
@@ -508,12 +510,12 @@ async function handleConfirmSuggestionStep(phone, text, state) {
 }
 
 async function handleCancelConfirmationStep(phone, text, state) {
-  if (isYes(text)) {
+  if (text === "cancel_order_yes" || isYes(text)) {
     getFreshState(phone);
     return sendMainMenu(phone);
   }
 
-  if (isNo(text)) {
+  if (text === "cancel_order_no" || isNo(text)) {
     const previousStep = state.previousStep || "MAIN_MENU";
     state.step = previousStep;
     delete state.previousStep;
@@ -522,6 +524,19 @@ async function handleCancelConfirmationStep(phone, text, state) {
   }
 
   return sendTextAndReturn(phone, "Responde *sí* para cancelar el pedido o *no* para continuar.");
+}
+
+async function sendCancelOrderQuestion(phone) {
+  await sendWhatsAppButtons(
+    phone,
+    "Parece que ya tienes un pedido en curso. ¿Deseas cancelarlo y empezar de nuevo?",
+    [
+      { id: "cancel_order_yes", title: "Sí, empezar de nuevo" },
+      { id: "cancel_order_no", title: "No, continuar" }
+    ],
+    "Pedido en curso"
+  );
+  return "confirmación de pedido en curso enviada";
 }
 
 function resendStepPrompt(phone, state) {
@@ -546,6 +561,8 @@ function resendStepPrompt(phone, state) {
       return sendTextAndReturn(phone, "¿Me regalas tu nombre completo, por favor?");
     case "ASK_PHONE":
       return sendTextAndReturn(phone, "¿A qué número te podemos llamar?");
+    case "ASK_DELIVERY_METHOD":
+      return sendDeliveryMethodQuestion(phone);
     case "ASK_ADDRESS":
       return sendTextAndReturn(phone, "¿Cuál es la dirección de entrega?");
     case "ASK_NEIGHBORHOOD":
@@ -639,6 +656,8 @@ async function handleBack(phone) {
 
     case "ASK_PHONE":
       return sendTextAndReturn(phone, "¿A qué número te podemos llamar?");
+    case "ASK_DELIVERY_METHOD":
+      return sendDeliveryMethodQuestion(phone);
 
     case "ASK_ADDRESS":
       return sendTextAndReturn(phone, "¿Cuál es la dirección de entrega?");
@@ -736,30 +755,30 @@ async function handleMainMenuStep(phone, text, rawText, state) {
     return handleHumanHandoff(phone);
   }
 
-  if (text === "1" || matchesKeyword(text, CARD_KEYWORDS) || text.includes("menu")) {
+  if (matchesKeyword(text, CARD_KEYWORDS) || text.includes("menu")) {
     return sendCarta(phone, state);
   }
 
-  if (text === "2" || matchesKeyword(text, ORDER_KEYWORDS)) {
+  if (matchesKeyword(text, ORDER_KEYWORDS)) {
     state.cart = [];
     return askProductName(phone, state, "Claro 😊 ¿Qué te gustaría pedir? Escríbeme el nombre del producto, por ejemplo: Croissant, Torta de chocolate, Café.");
   }
 
-  if (text === "3" || matchesKeyword(text, RECOMMEND_KEYWORDS)) {
+  if (matchesKeyword(text, RECOMMEND_KEYWORDS)) {
     state.cart = [];
     state.step = "ASK_RECO_CATEGORY";
     states.set(phone, state);
     return sendRecoCategoryQuestion(phone);
   }
 
-  if (text === "4" || matchesKeyword(text, HOURS_KEYWORDS) || matchesKeyword(text, LOCATION_KEYWORDS)) {
+  if (matchesKeyword(text, HOURS_KEYWORDS) || matchesKeyword(text, LOCATION_KEYWORDS)) {
     return sendTextAndReturn(
       phone,
       `📍 Estamos en: ${BAKERY_ADDRESS}\n\n🕒 Horario de atención: ${HUMAN_ATTENTION_SCHEDULE}\n\nEscribe *menu* para ver las opciones de nuevo.`
     );
   }
 
-  if (text === "5" || isHumanRequest(text)) {
+  if (isHumanRequest(text)) {
     return handleHumanHandoff(phone);
   }
 
@@ -967,17 +986,17 @@ async function sendAiHelpOrFallback(phone, text, state, nextStep) {
 
 async function handleProductFoundStep(phone, text, state) {
   if (state.waitingForProductName) {
-    if (text === "1" || text.includes("carta") || text.includes("catalogo")) {
+    if (text.includes("carta") || text.includes("catalogo")) {
       return sendCarta(phone, state);
     }
 
-    if (text === "2" || text.includes("recomien")) {
+    if (text.includes("recomien")) {
       state.step = "ASK_RECO_CATEGORY";
       states.set(phone, state);
       return sendRecoCategoryQuestion(phone);
     }
 
-    if (text === "3" || text.includes("asesor") || text.includes("humano")) {
+    if (text.includes("asesor") || text.includes("humano")) {
       return handleHumanHandoff(phone);
     }
 
@@ -996,10 +1015,10 @@ async function handleProductFoundStep(phone, text, state) {
 
   const selectedProduct = text.startsWith("prod_")
     ? state.foundProducts.find((product) => product.id === text.replace("prod_", ""))
-    : state.foundProducts[Number(text) - 1];
+    : null;
 
   if (!selectedProduct) {
-    return sendTextAndReturn(phone, "Por favor elige una presentación de la lista 😊");
+    return sendTextAndReturn(phone, "Por favor elige una presentación usando la lista 😊");
   }
 
   state.selectedProduct = selectedProduct;
@@ -1130,10 +1149,7 @@ async function handleAddMoreStep(phone, text, state) {
     );
   }
 
-  return sendTextAndReturn(
-    phone,
-    `Por favor elige una opción:\n\n• Escribe *agregar* para añadir otro producto\n• Escribe *finalizar* para continuar con tus datos`
-  );
+  return sendAddMoreButtons(phone, state);
 }
 
 // ---------------------------------------------------------------------------
@@ -1196,13 +1212,44 @@ function handleCustomerNameStep(phone, rawText, state) {
   }
 
   state.customerName = capitalizeWords(name);
-  state.step = "ASK_ADDRESS";
+  state.step = "ASK_DELIVERY_METHOD";
   states.set(phone, state);
 
-  return sendTextAndReturn(
+  return sendDeliveryMethodQuestion(phone);
+}
+
+async function sendDeliveryMethodQuestion(phone) {
+  await sendWhatsAppButtons(
     phone,
-    `Gracias, ${state.customerName} 😊\n\nAhora dime la *dirección de entrega* (calle, carrera, número, torre, apto, etc.):\n\nEjemplo: Calle 10 # 20-30, Torre 2, Apto 301\n\n_Escribe "atrás" para volver._`
+    "¿Cómo deseas recibir tu pedido?",
+    [
+      { id: "delivery_pickup", title: "Recoger en panadería" },
+      { id: "delivery_home", title: "Domicilio" }
+    ],
+    "🚚 Método de entrega"
   );
+  return "pregunta de entrega enviada";
+}
+
+function handleDeliveryMethodStep(phone, text, state) {
+  if (text === "delivery_pickup") {
+    state.deliveryMethod = "recoger";
+    state.step = "ASK_PAYMENT_METHOD";
+    states.set(phone, state);
+    return sendPaymentQuestion(phone);
+  }
+
+  if (text === "delivery_home") {
+    state.deliveryMethod = "domicilio";
+    state.step = "ASK_ADDRESS";
+    states.set(phone, state);
+    return sendTextAndReturn(
+      phone,
+      `Gracias, ${state.customerName} 😊\n\nDime la *dirección de entrega* (calle, carrera, número, torre, apto, etc.):\n\nEjemplo: Calle 10 # 20-30, Torre 2, Apto 301\n\n_Escribe "atrás" para volver._`
+    );
+  }
+
+  return sendDeliveryMethodQuestion(phone);
 }
 
 function handlePhoneStep(phone, text, rawText, state) {
@@ -1346,16 +1393,12 @@ async function handlePaymentMethodStep(phone, text, state) {
     paymentMethod = "efectivo";
   } else if (text === "pay_transfer" || text.includes("transferencia")) {
     paymentMethod = "transferencia";
-  } else if (text === "1") {
-    paymentMethod = "transferencia";
-  } else if (text === "2") {
-    paymentMethod = "efectivo";
   }
 
   if (!paymentMethod) {
     return sendTextAndReturn(
       phone,
-      `Elige una opción válida usando los botones, o escribe:\n\n1. Transferencia\n2. Efectivo\n\n_Escribe "atrás" para volver._`
+      "Elige una opción usando los botones de transferencia o efectivo.\n\n_Escribe \"atrás\" para volver._"
     );
   }
 
@@ -1368,6 +1411,7 @@ async function handlePaymentMethodStep(phone, text, state) {
   const orderPayload = {
     phone,
     customerName: state.customerName,
+    deliveryMethod: state.deliveryMethod,
     contactPhone: state.contactPhone,
     address: state.address,
     neighborhood: state.neighborhood,
@@ -1401,41 +1445,45 @@ async function handlePaymentMethodStep(phone, text, state) {
 // RECOMENDACIONES
 // ---------------------------------------------------------------------------
 
-function sendRecoCategoryQuestion(phone) {
-  return sendTextAndReturn(
+async function sendRecoCategoryQuestion(phone) {
+  await sendWhatsAppList(
     phone,
-    `¿Qué se te antoja hoy? 😊\n\n1. Pan\n2. Pasteles o tortas\n3. Postres\n4. Bebidas\n5. Sorpréndeme\n\n_Escribe "atrás" para volver._`
+    "¿Qué se te antoja hoy? 😊",
+    "Elegir categoría",
+    [{
+      title: "Recomendaciones",
+      rows: [
+        { id: "reco_cat_pan", title: "Pan", description: "Panes y productos de panadería" },
+        { id: "reco_cat_tortas", title: "Pasteles o tortas", description: "Tortas y porciones" },
+        { id: "reco_cat_postres", title: "Postres", description: "Algo dulce para disfrutar" },
+        { id: "reco_cat_bebidas", title: "Bebidas", description: "Maltas, gaseosas y bebidas" },
+        { id: "reco_cat_sorpresa", title: "Sorpréndeme", description: "Elige por mí" }
+      ]
+    }],
+    "✨ Recomendaciones"
   );
+  return "lista de categorías de recomendación enviada";
 }
 
 function handleRecoCategoryStep(phone, text, state) {
   const category = parseRecoCategory(text);
 
   if (!category) {
-    return sendTextAndReturn(
-      phone,
-      `Elige una opción válida:\n\n1. Pan\n2. Pasteles o tortas\n3. Postres\n4. Bebidas\n5. Sorpréndeme\n\n_Escribe "atrás" para volver._`
-    );
+    return sendRecoCategoryQuestion(phone);
   }
 
   state.recoCategory = category;
   state.step = "ASK_RECO_MOOD";
   states.set(phone, state);
 
-  return sendTextAndReturn(
-    phone,
-    `¿Para qué ocasión es?\n\n1. Antojo del día\n2. Cumpleaños o celebración\n3. Para compartir en familia u oficina\n4. No sé, muéstrame lo más pedido\n\n_Escribe "atrás" para volver._`
-  );
+  return sendRecoMoodQuestion(phone);
 }
 
 function handleRecoMoodStep(phone, text, state) {
   const mood = parseRecoMood(text);
 
   if (!mood) {
-    return sendTextAndReturn(
-      phone,
-      `Elige una opción válida:\n\n1. Antojo del día\n2. Cumpleaños o celebración\n3. Para compartir en familia u oficina\n4. No sé, muéstrame lo más pedido\n\n_Escribe "atrás" para volver._`
-    );
+    return sendRecoMoodQuestion(phone);
   }
 
   state.recoMood = mood;
@@ -1446,24 +1494,54 @@ function handleRecoMoodStep(phone, text, state) {
   state.step = "SHOW_RECOMMENDATIONS";
   states.set(phone, state);
 
-  const productList = recommendedProducts
-    .map((product, index) => `${index + 1}. ${product.name} — ${formatPrice(product.price)}\n${product.description}`)
-    .join("\n\n");
+  return sendRecommendationsList(phone, recommendedProducts);
+}
 
-  return sendTextAndReturn(
+async function sendRecoMoodQuestion(phone) {
+  await sendWhatsAppList(
     phone,
-    `Según lo que me cuentas, esto te puede gustar:\n\n${productList}\n\n¿Cuál te gustaría agregar a tu pedido?\n\nResponde con el número de la opción 😊\n\n_Escribe "atrás" para volver._`
+    "¿Para qué ocasión es?",
+    "Elegir ocasión",
+    [{
+      title: "Ocasiones",
+      rows: [
+        { id: "reco_mood_antojo", title: "Antojo del día", description: "Porciones individuales" },
+        { id: "reco_mood_cumpleanos", title: "Cumpleaños", description: "Para una celebración" },
+        { id: "reco_mood_compartir", title: "Para compartir", description: "Familia u oficina" },
+        { id: "reco_mood_populares", title: "No sé", description: "Muéstrame lo más pedido" }
+      ]
+    }],
+    "🎉 Ocasión"
   );
+  return "lista de ocasiones enviada";
+}
+
+async function sendRecommendationsList(phone, recommendedProducts) {
+  await sendWhatsAppList(
+    phone,
+    "Según lo que me cuentas, esto te puede gustar. Elige uno:",
+    "Ver recomendaciones",
+    [{
+      title: "Recomendados",
+      rows: recommendedProducts.map((product) => ({
+        id: `prod_${product.id}`,
+        title: product.name,
+        description: `${formatPrice(product.price)} · ${product.description}`
+      }))
+    }],
+    "⭐ Para ti"
+  );
+  return "lista de recomendaciones enviada";
 }
 
 function handleRecommendationSelectionStep(phone, text, state) {
-  const selectedIndex = Number(text);
+  const selectedProduct = text.startsWith("prod_")
+    ? state.recommendedProducts.find((product) => product.id === text.replace("prod_", ""))
+    : null;
 
-  if (!Number.isInteger(selectedIndex) || selectedIndex < 1 || selectedIndex > state.recommendedProducts.length) {
-    return sendTextAndReturn(phone, "Por favor responde con el número de la opción que quieres agregar 😊\n\n_Escribe \"atrás\" para volver._");
+  if (!selectedProduct) {
+    return sendRecommendationsList(phone, state.recommendedProducts || []);
   }
-
-  const selectedProduct = state.recommendedProducts[selectedIndex - 1];
 
   state.selectedProduct = selectedProduct;
   state.step = "ASK_QUANTITY";
@@ -1476,10 +1554,16 @@ function handleRecommendationSelectionStep(phone, text, state) {
 }
 
 function getRecommendations(state) {
-  const byCategory =
-    state.recoCategory === "sorpresa"
-      ? products
-      : products.filter((p) => p.category === state.recoCategory);
+  const categoryGroups = {
+    pan: ["cat_panaderia_tradicional", "cat_hojaldres_especiales", "cat_donas_reposteria"],
+    tortas: ["cat_tortas"],
+    postres: ["cat_postres"],
+    bebidas: ["cat_maltas_bebidas", "cat_alpina", "cat_postobon", "cat_coca_cola"]
+  };
+  const selectedCategories = categoryGroups[state.recoCategory] || [];
+  const byCategory = state.recoCategory === "sorpresa"
+    ? products
+    : products.filter((p) => selectedCategories.includes(p.category));
 
   const moodTag =
     { antojo: "antojo", cumpleanos: "cumpleanos", compartir: "compartir" }[state.recoMood] || null;
@@ -1516,19 +1600,19 @@ function getRecommendations(state) {
 }
 
 function parseRecoCategory(text) {
-  if (text === "1" || text.includes("pan")) return "cat_panaderia_tradicional";
-  if (text === "2" || text.includes("pastel") || text.includes("torta")) return "cat_tortas";
-  if (text === "3" || text.includes("postre")) return "cat_postres";
-  if (text === "4" || text.includes("bebida")) return "cat_maltas_bebidas";
-  if (text === "5" || text.includes("sorprend")) return "sorpresa";
+  if (text === "reco_cat_pan" || text.includes("pan")) return "pan";
+  if (text === "reco_cat_tortas" || text.includes("pastel") || text.includes("torta")) return "tortas";
+  if (text === "reco_cat_postres" || text.includes("postre")) return "postres";
+  if (text === "reco_cat_bebidas" || text.includes("bebida")) return "bebidas";
+  if (text === "reco_cat_sorpresa" || text.includes("sorprend")) return "sorpresa";
   return null;
 }
 
 function parseRecoMood(text) {
-  if (text === "1" || text.includes("antojo")) return "antojo";
-  if (text === "2" || text.includes("cumple")) return "cumpleanos";
-  if (text === "3" || text.includes("compartir")) return "compartir";
-  if (text === "4" || text.includes("no se") || text.includes("no sé") || text.includes("pedido")) return "populares";
+  if (text === "reco_mood_antojo" || text.includes("antojo")) return "antojo";
+  if (text === "reco_mood_cumpleanos" || text.includes("cumple")) return "cumpleanos";
+  if (text === "reco_mood_compartir" || text.includes("compartir")) return "compartir";
+  if (text === "reco_mood_populares" || text.includes("no se") || text.includes("pedido")) return "populares";
   return null;
 }
 
