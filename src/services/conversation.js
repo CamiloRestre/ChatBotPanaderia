@@ -115,6 +115,10 @@ const ADVANCED_FLOW_STEPS = new Set([
   "SHOW_RECOMMENDATIONS", "ASK_LEAD_NAME", "ASK_LEAD_NEED"
 ]);
 
+const PRODUCT_CANCEL_STEPS = new Set([
+  "ASK_QUANTITY", "ASK_NOTE", "ASK_NOTE_TEXT"
+]);
+
 function normalize(text) {
   return String(text || "")
     .trim()
@@ -123,6 +127,18 @@ function normalize(text) {
     .replace(/[\u0300-\u036f]/g, "")
     .replace(/[¿?¡!.,;:()\[\]{}"']/g, "")
     .replace(/\s+/g, " ");
+}
+
+function detectCancelIntent(text) {
+  const normalizedText = normalize(text);
+  const cancelPhrases = [
+    "cancelar", "cancelar pedido", "cancelar producto", "ya no quiero",
+    "no quiero", "no quiero nada", "olvidalo", "dejalo asi", "no gracias",
+    "mejor no", "stop", "salir"
+  ];
+
+  return normalizedText === "no" ||
+    cancelPhrases.some((phrase) => normalizedText.includes(phrase));
 }
 
 function capitalizeWords(text) {
@@ -320,8 +336,21 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
 
   const state = states.get(phone);
 
+  if (
+    state?.step === "CANCEL_OPTIONS" ||
+    text === "cancel_product" ||
+    text === "cancel_order" ||
+    text === "continue_order"
+  ) {
+    return handleCancellationChoice(phone, text, state);
+  }
+
   if (state?.step === "CONFIRM_CANCEL_ORDER") {
     return handleCancelConfirmationStep(phone, text, state);
+  }
+
+  if (detectCancelIntent(text)) {
+    return handleCancelIntent(phone, state);
   }
 
   if (isBackCommand(text)) {
@@ -525,6 +554,130 @@ async function handleCancelConfirmationStep(phone, text, state) {
   }
 
   return sendTextAndReturn(phone, "Responde *sí* para cancelar el pedido o *no* para continuar.");
+}
+
+async function handleCancelIntent(phone, state) {
+  if (!state || state.step === "MAIN_MENU" || !(state.cart || []).length) {
+    return sendNoActiveOrderMessage(phone, state);
+  }
+
+  state.cancelPreviousStep = state.step;
+  state.step = "CANCEL_OPTIONS";
+  states.set(phone, state);
+
+  if (PRODUCT_CANCEL_STEPS.has(state.cancelPreviousStep)) {
+    return sendProductCancellationQuestion(phone);
+  }
+
+  return sendOrderCancellationQuestion(phone);
+}
+
+async function sendProductCancellationQuestion(phone) {
+  await sendWhatsAppButtons(
+    phone,
+    "¿Qué deseas cancelar?",
+    [
+      { id: "cancel_product", title: "Cancelar este producto" },
+      { id: "cancel_order", title: "Cancelar todo el pedido" },
+      { id: "continue_order", title: "Seguir con el pedido" }
+    ],
+    "Cancelar"
+  );
+  return "opciones de cancelación de producto enviadas";
+}
+
+async function sendOrderCancellationQuestion(phone) {
+  await sendWhatsAppButtons(
+    phone,
+    "¿Qué deseas hacer?",
+    [
+      { id: "add_product", title: "Agregar producto" },
+      { id: "finish_order", title: "Finalizar orden" },
+      { id: "cancel_order", title: "Cancelar pedido" }
+    ],
+    "Tu pedido"
+  );
+  return "opciones de cancelación de pedido enviadas";
+}
+
+async function sendNoActiveOrderMessage(phone, state) {
+  if (state) {
+    states.set(phone, state);
+  }
+
+  await sendWhatsAppButtons(
+    phone,
+    "No tienes ningún pedido en curso 😊\n\n¿Qué deseas hacer?",
+    [
+      { id: "menu_ver_carta", title: "Ver la carta" },
+      { id: "menu_asesor", title: "Hablar con alguien" }
+    ],
+    "Sin pedido activo"
+  );
+  return "opciones sin pedido activo enviadas";
+}
+
+async function handleCancellationChoice(phone, text, state) {
+  if (text === "cancel_order") {
+    getFreshState(phone);
+    return sendMainMenu(phone);
+  }
+
+  if (!state) {
+    return sendNoActiveOrderMessage(phone, state);
+  }
+
+  if (text === "add_product") {
+    state.addingProduct = true;
+    state.step = "CATEGORY_SELECTED";
+    state.currentListId = null;
+    state.navigationHistory = [];
+    states.set(phone, state);
+    return sendCarta(phone, state, { showBackToCart: true });
+  }
+
+  if (text === "finish_order") {
+    state.step = "ASK_CUSTOMER_NAME";
+    delete state.cancelPreviousStep;
+    states.set(phone, state);
+    return sendTextAndReturn(
+      phone,
+      `${buildCartSummary(state)}\n\nPerfecto 😊 Para dejar tu pedido registrado, ¿me regalas tu *nombre completo*?\n\n_Escribe "atrás" para volver._`
+    );
+  }
+
+  if (text === "continue_order") {
+    const previousStep = state.cancelPreviousStep || "ASK_ADD_MORE";
+    delete state.cancelPreviousStep;
+    state.step = previousStep;
+    states.set(phone, state);
+
+    if (previousStep === "ASK_ADD_MORE") {
+      return sendAddMoreButtons(phone, state);
+    }
+    return resendStepPrompt(phone, state);
+  }
+
+  if (text === "cancel_product") {
+    const selectedProductId = state.selectedProduct?.id;
+    const pendingItem = selectedProductId
+      ? state.cart.find((item) => item.product.id === selectedProductId && item.pending)
+      : null;
+
+    if (pendingItem) {
+      state.cart = state.cart.filter((item) => item !== pendingItem);
+    }
+
+    state.pendingQuantity = null;
+    state.note = null;
+    state.selectedProduct = null;
+    delete state.cancelPreviousStep;
+    state.step = "ASK_ADD_MORE";
+    states.set(phone, state);
+    return sendAddMoreButtons(phone, state);
+  }
+
+  return sendNoActiveOrderMessage(phone, state);
 }
 
 async function sendCancelOrderQuestion(phone) {
