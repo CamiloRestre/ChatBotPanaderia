@@ -1,98 +1,79 @@
-// products.js
-// Base de conocimiento de PRODUCTOS de la panadería.
-// Todo lo que el bot "sabe" sobre el menú sale de aquí.
-// Para agregar, quitar o cambiar precios de un producto, este es el ÚNICO
-// archivo que necesitas editar.
+import menu from "./menu_whatsapp_molinos.json" with { type: "json" };
 
-export const CATEGORY_LABELS = {
-  pan: "Panadería",
-  pastel: "Pasteles y tortas",
-  postre: "Postres",
-  bebida: "Bebidas"
-};
+export const menuPrincipal = menu.menu_principal;
+export const menuLists = menu.listas;
 
-// [nombre, categoria, precio, etiquetas]
-// etiquetas posibles: "popular", "sin gluten", "vegano",
-// "antojo" (porción individual), "cumpleanos" (torta entera / evento),
-// "compartir" (formato grande / para varias personas)
-const rawProducts = [
-  // ---------- PANADERÍA ----------
-  ["Pan Francés", "pan", 2500, ["popular"]],
-  ["Pan Integral", "pan", 3000, []],
-  ["Croissant de Mantequilla", "pan", 4500, ["popular"]],
-  ["Croissant de Jamón y Queso", "pan", 6000, []],
-  ["Pan de Queso", "pan", 3500, []],
-  ["Pandebono", "pan", 2000, ["popular", "sin gluten"]],
-  ["Almojábana", "pan", 2200, ["sin gluten"]],
-  ["Pan de Yuca", "pan", 2200, ["sin gluten"]],
-  ["Mogolla Integral", "pan", 3000, []],
-  ["Pan de Chocolate", "pan", 4000, []],
+export const CATEGORY_LABELS = Object.fromEntries(
+  menuPrincipal.map((category) => [category.id, category.title])
+);
 
-  // ---------- PASTELES Y TORTAS ----------
-  ["Torta de Chocolate (porción)", "pastel", 8000, ["antojo"]],
-  ["Torta de Chocolate Entera", "pastel", 65000, ["cumpleanos", "compartir"]],
-  ["Torta Tres Leches (porción)", "pastel", 8500, ["antojo"]],
-  ["Torta Tres Leches Entera", "pastel", 70000, ["cumpleanos", "compartir"]],
-  ["Torta Red Velvet (porción)", "pastel", 9000, ["antojo"]],
-  ["Torta Red Velvet Entera", "pastel", 75000, ["cumpleanos", "compartir"]],
-  ["Cheesecake de Fresa (porción)", "pastel", 9500, ["antojo"]],
-  ["Cheesecake de Fresa Entero", "pastel", 80000, ["cumpleanos", "compartir"]],
-  ["Torta de Zanahoria (porción)", "pastel", 8000, ["antojo"]],
-  ["Torta de Vainilla Personalizada", "pastel", 90000, ["cumpleanos", "compartir"]],
+export const CATEGORY_BY_ID = Object.fromEntries(
+  menuPrincipal.map((category) => [category.id, category])
+);
 
-  // ---------- POSTRES ----------
-  ["Brownie con Nueces", "postre", 6000, ["antojo", "popular"]],
-  ["Milhoja de Arequipe", "postre", 5500, ["antojo"]],
-  ["Tiramisú Individual", "postre", 7500, ["antojo"]],
-  ["Flan de Caramelo", "postre", 5000, ["antojo", "sin gluten"]],
-  ["Arroz con Leche", "postre", 4500, ["antojo", "sin gluten"]],
-  ["Galleta de Avena y Chocolate", "postre", 3000, ["antojo", "vegano"]],
-  ["Cupcake de Vainilla", "postre", 4000, ["antojo"]],
-  ["Cupcake Red Velvet", "postre", 4500, ["antojo"]],
-  ["Rollo de Canela", "postre", 5000, ["antojo", "popular"]],
-  ["Alfajor de Maicena", "postre", 3500, ["antojo"]],
+export const NAVIGATION_TARGETS = Object.fromEntries(
+  Object.values(menuLists)
+    .flatMap((list) => list.filas)
+    .filter((row) => row.id.startsWith("nav_"))
+    .map((row) => [row.id, {
+      "nav_pan_abuela": "1B",
+      "nav_hojaldres_y_pastelitos": "2B",
+      "nav_dulces_e_integrales": "2C",
+      "nav_tortas_medio_tres_cuartos_y_1_libra": "4B",
+      "nav_otras_bebidas": "6B",
+      "nav_avenas_leches_y_mas": "7B",
+      "nav_energia_e_hidratacion": "8B",
+      "nav_aguas_te_y_mas": "8C",
+      "nav_jugos_y_aguas": "9B"
+    }[row.id]])
+);
 
-  // ---------- BEBIDAS ----------
-  ["Café Americano", "bebida", 3000, ["popular"]],
-  ["Café con Leche", "bebida", 3500, ["popular"]],
-  ["Capuchino", "bebida", 4500, []],
-  ["Chocolate Caliente", "bebida", 4000, []],
-  ["Té Chai", "bebida", 4000, []],
-  ["Limonada Natural", "bebida", 4000, ["compartir"]],
-  ["Jugo de Mora", "bebida", 4500, []],
-  ["Jugo de Mango", "bebida", 4500, []],
-  ["Malteada de Chocolate", "bebida", 6000, ["antojo"]]
-];
-
-function buildDescription(category, tags) {
-  const extras = [];
-
-  if (tags.includes("sin gluten")) extras.push("apto para dietas sin gluten");
-  if (tags.includes("vegano")) extras.push("opción vegana");
-  if (tags.includes("cumpleanos")) extras.push("ideal para cumpleaños o celebraciones");
-  if (tags.includes("compartir")) extras.push("perfecto para compartir");
-
-  const base = `Producto de nuestra sección de ${CATEGORY_LABELS[category]}`;
-
-  return extras.length > 0 ? `${base}, ${extras.join(", ")}.` : `${base}.`;
+function priceFromId(id) {
+  const price = Number(id.match(/_(\d+)$/)?.[1]);
+  return Number.isFinite(price) ? price : null;
 }
 
-export const products = rawProducts.map(([name, category, price, tags], index) => ({
-  id: index + 1,
-  name,
-  category,
-  price,
-  tags,
-  available: true,
-  description: buildDescription(category, tags),
-  keywords: [
-    name.toLowerCase(),
-    name.toLowerCase().replace(/\s+/g, ""),
-    category,
-    ...tags,
-    ...name.toLowerCase().split(" ")
-  ]
-}));
+function fullName(row) {
+  const descriptionName = row.description?.split(" · $")[0];
+  return descriptionName && descriptionName !== row.description
+    ? descriptionName
+    : row.title;
+}
+
+function tagsFor(product) {
+  const normalized = product.name.toLowerCase();
+  return [
+    ...(normalized.includes("torta") ? ["cumpleanos", "compartir"] : []),
+    ...(normalized.includes("porcion") || normalized.includes("vaso") ? ["antojo"] : [])
+  ];
+}
+
+export const products = Object.entries(menuLists).flatMap(([listId, list]) =>
+  list.filas
+    .filter((row) => !row.id.startsWith("nav_"))
+    .map((row) => {
+      const name = fullName(row);
+      const category = menuPrincipal.find((item) => item.primera_lista === listId)?.id || listId;
+      return {
+        id: row.id,
+        name,
+        category,
+        listId,
+        price: priceFromId(row.id),
+        tags: tagsFor({ name }),
+        available: true,
+        description: row.description,
+        keywords: [
+          name.toLowerCase(),
+          row.title.toLowerCase(),
+          row.description.toLowerCase(),
+          category,
+          list.titulo.toLowerCase(),
+          ...name.toLowerCase().split(/\s+/)
+        ]
+      };
+    })
+);
 
 export function formatPrice(value) {
   return new Intl.NumberFormat("es-CO", {
@@ -106,4 +87,12 @@ export function getProductsByCategory(category) {
   return products.filter(
     (product) => product.available && product.category === category
   );
+}
+
+export function getListRows(listId) {
+  return menuLists[listId]?.filas || [];
+}
+
+export function getProductById(id) {
+  return products.find((product) => product.id === id) || null;
 }
