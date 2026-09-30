@@ -1,80 +1,980 @@
 {
   "menu_principal": [
-    {"id":"cat_panaderia_tradicional","title":"Panadería tradicional","description":"Aliñado, Molino, de maíz y abuela","primera_lista":"1A"},
-    {"id":"cat_hojaldres_especiales","title":"Hojaldres y especiales","description":"Salados, tostadas, hojaldres e integrales","primera_lista":"2A"},
-    {"id":"cat_donas_reposteria","title":"Donas y repostería","description":"Donas, alfajores, brownie, mil hojas","primera_lista":"3A"},
-    {"id":"cat_tortas","title":"Tortas","description":"Porciones y tortas por tamaño","primera_lista":"4A"},
-    {"id":"cat_postres","title":"Postres","description":"Tres leches, tiramisú, cheesecake","primera_lista":"5A"},
-    {"id":"cat_maltas_bebidas","title":"Maltas y otras bebidas","description":"Malta, Big Cola, Cifrut, Electrolit","primera_lista":"6A"},
-    {"id":"cat_alpina","title":"Productos Alpina","description":"Yogures, avenas y leches","primera_lista":"7A"},
-    {"id":"cat_postobon","title":"Productos Postobón","description":"Gaseosas, Hit, energizantes, aguas","primera_lista":"8A"},
-    {"id":"cat_coca_cola","title":"Productos Coca-Cola","description":"Coca-Cola, Del Valle, Quatro, aguas","primera_lista":"9A"}
+    {
+      "id": "cat_panaderia_tradicional",
+      "title": "Panadería tradicional",
+      "description": "Aliñado, Molino, de maíz y abuela",
+      "primera_lista": "1A"
+    },
+    {
+      "id": "cat_hojaldres_especiales",
+      "title": "Hojaldres y especiales",
+      "description": "Salados, tostadas, hojaldres e integrales",
+      "primera_lista": "2A"
+    },
+    {
+      "id": "cat_donas_reposteria",
+      "title": "Donas y repostería",
+      "description": "Donas, alfajores, brownie, mil hojas",
+      "primera_lista": "3A"
+    },
+    {
+      "id": "cat_tortas",
+      "title": "Tortas",
+      "description": "Porciones y tortas por tamaño",
+      "primera_lista": "4A"
+    },
+    {
+      "id": "cat_postres",
+      "title": "Postres",
+      "description": "Tres leches, tiramisú, cheesecake",
+      "primera_lista": "5A"
+    },
+    {
+      "id": "cat_maltas_bebidas",
+      "title": "Maltas y otras bebidas",
+      "description": "Malta, Big Cola, Cifrut, Electrolit",
+      "primera_lista": "6A"
+    },
+    {
+      "id": "cat_alpina",
+      "title": "Productos Alpina",
+      "description": "Yogures, avenas y leches",
+      "primera_lista": "7A"
+    },
+    {
+      "id": "cat_postobon",
+      "title": "Productos Postobón",
+      "description": "Gaseosas, Hit, energizantes, aguas",
+      "primera_lista": "8A"
+    },
+    {
+      "id": "cat_coca_cola",
+      "title": "Productos Coca-Cola",
+      "description": "Coca-Cola, Del Valle, Quatro, aguas",
+      "primera_lista": "9A"
+    }
   ],
   "listas": {
-    "1A":{"titulo":"Panadería tradicional","filas":[
-      {"id":"pan_alinado_500","title":"Pan aliñado","description":"Presentación $500"},
-      {"id":"pan_alinado_1000","title":"Pan aliñado","description":"Presentación $1.000"},
-      {"id":"pan_alinado_2000","title":"Pan aliñado","description":"Presentación $2.000"},
-      {"id":"pan_de_maiz_600","title":"Pan de maíz","description":"$600"},
-      {"id":"pan_molino_2000","title":"Pan Molino","description":"Presentación $2.000"},
-      {"id":"pan_molino_3000","title":"Pan Molino","description":"Presentación $3.000"},
-      {"id":"pan_molino_5000","title":"Pan Molino","description":"Presentación $5.000"},
-      {"id":"nav_pan_abuela","title":"▶ Pan abuela","description":"Ver más productos"}
-    ]},
-    "1B":{"titulo":"Pan abuela","filas":[
-      {"id":"pan_abuela_1200","title":"Pan abuela","description":"Presentación $1.200"},
-      {"id":"pan_abuela_2500","title":"Pan abuela","description":"Presentación $2.500"},
-      {"id":"pan_abuela_3500","title":"Pan abuela","description":"Presentación $3.500"},
-      {"id":"pan_abuela_5000","title":"Pan abuela","description":"Presentación $5.000"},
-      {"id":"pan_abuela_7000","title":"Pan abuela","description":"Presentación $7.000"}
-    ]},
-    "2A":{"titulo":"Salados y tostadas","filas":[
-      {"id":"pan_queso_500","title":"Pan queso","description":"$500"},{"id":"pan_de_achiras_500","title":"Pan de achiras","description":"$500"},{"id":"quesadilla_1200","title":"Quesadilla","description":"$1.200"},{"id":"tostada_alinada_1700","title":"Tostada aliñada","description":"$1.700"},{"id":"tostada_integral_1700","title":"Tostada integral","description":"$1.700"},{"id":"pan_pollo_1900","title":"Pan pollo","description":"$1.900"},{"id":"hawaiano_2000","title":"Hawaiano","description":"$2.000"},{"id":"pan_pizza_3200","title":"Pan pizza","description":"$3.200"},{"id":"nav_hojaldres_y_pastelitos","title":"▶ Hojaldres y pastelitos","description":"Ver más productos"},{"id":"nav_dulces_e_integrales","title":"▶ Dulces e integrales","description":"Ver más productos"}
-    ]},
-    "2B":{"titulo":"Hojaldres y pastelitos","filas":[
-      {"id":"lenguas_500","title":"Lenguas","description":"$500"},{"id":"croissant_1300","title":"Croissant","description":"$1.300"},{"id":"chicharrones_1500","title":"Chicharrones","description":"$1.500"},{"id":"orejas_1600","title":"Orejas","description":"$1.600"},{"id":"panuelos_1600","title":"Pañuelos","description":"$1.600"},{"id":"peras_2000","title":"Peras","description":"$2.000"},{"id":"rollos_2000","title":"Rollos","description":"$2.000"},{"id":"pionono_2000","title":"Pionono","description":"$2.000"},{"id":"besitos_2200","title":"Besitos","description":"$2.200"}
-    ]},
-    "2C":{"titulo":"Dulces e integrales","filas":[
-      {"id":"pan_royal_500","title":"Pan Royal","description":"$500"},{"id":"mogolla_integral_500","title":"Mogolla integral","description":"$500"},{"id":"agridulce_700","title":"Agridulce","description":"$700"},{"id":"pan_integral_1200","title":"Pan integral","description":"Presentación $1.200"},{"id":"roscones_2000","title":"Roscones","description":"$2.000"},{"id":"pan_trenza_2000","title":"Pan trenza","description":"$2.000"},{"id":"pan_integral_2300","title":"Pan integral","description":"Presentación $2.300"},{"id":"pan_galleta_2500","title":"Pan galleta","description":"$2.500"},{"id":"pan_crema_2500","title":"Pan crema","description":"$2.500"},{"id":"pan_cana_2500","title":"Pan caña","description":"$2.500"}
-    ]},
-    "3A":{"titulo":"Donas y repostería","filas":[
-      {"id":"donas_de_azucar_1700","title":"Donas de azúcar","description":"$1.700"},{"id":"donas_2000","title":"Donas","description":"$2.000"},{"id":"alfajores_2200","title":"Alfajores","description":"$2.200"},{"id":"dona_de_chocolate_2500","title":"Dona de chocolate","description":"$2.500"},{"id":"cuques_2500","title":"Cuques","description":"$2.500"},{"id":"brownie_3500","title":"Brownie","description":"$3.500"},{"id":"mil_hojas_3500","title":"Mil hojas","description":"$3.500"}
-    ]},
-    "4A":{"titulo":"Porciones y tortas ¼","filas":[
-      {"id":"porcion_torta_zanahoria_o_banano_1800","title":"Porción zanahoria/banano","description":"Porción de torta de zanahoria o banano · $1.800"},{"id":"porcion_torta_vainilla_2500","title":"Porción torta vainilla","description":"$2.500"},{"id":"porcion_de_torta_2700","title":"Porción de torta","description":"$2.700"},{"id":"porcion_torta_chocolate_10000","title":"Porción torta chocolate","description":"$10.000"},{"id":"mini_genoesa_13000","title":"Mini genoesa","description":"$13.000"},{"id":"torta_genoesa_cuarto_oreo_20000","title":"Torta genoesa ¼ Oreo","description":"$20.000"},{"id":"torta_fria_cuarto_24000","title":"Torta fría ¼","description":"$24.000"},{"id":"torta_fria_cuarto_chocolate_33000","title":"Torta fría ¼ chocolate","description":"$33.000"},{"id":"nav_tortas_medio_tres_cuartos_y_1_libra","title":"▶ Tortas ½, ¾ y 1 libra","description":"Ver más productos"}
-    ]},
-    "4B":{"titulo":"Tortas ½, ¾ y 1 libra","filas":[
-      {"id":"torta_oreo_medio_31000","title":"Torta Oreo ½","description":"$31.000"},{"id":"torta_fria_medio_38000","title":"Torta fría ½","description":"$38.000"},{"id":"torta_genoesa_o_chocolate_medio_60000","title":"Genoesa o choc. ½","description":"Torta genoesa o chocolate ½ · $60.000"},{"id":"torta_oreo_tres_cuartos_53000","title":"Torta Oreo ¾","description":"$53.000"},{"id":"torta_fria_tres_cuartos_60000","title":"Torta fría ¾","description":"$60.000"},{"id":"torta_genoesa_o_chocolate_tres_cuartos_80000","title":"Genoesa o choc. ¾","description":"Torta genoesa o chocolate ¾ · $80.000"},{"id":"torta_oreo_1_libra_60000","title":"Torta Oreo 1 libra","description":"$60.000"},{"id":"torta_fria_1_libra_70000","title":"Torta fría 1 libra","description":"$70.000"},{"id":"torta_genoesa_o_chocolate_1_libra_100000","title":"Genoesa o choc. 1 libra","description":"Torta genoesa o chocolate 1 libra · $100.000"}
-    ]},
-    "5A":{"titulo":"Postres","filas":[
-      {"id":"vasos_de_gelatina_4500","title":"Vasos de gelatina","description":"$4.500"},{"id":"vaso_de_fresas_4500","title":"Vaso de fresas","description":"$4.500"},{"id":"postre_tres_leches_7000","title":"Postre tres leches","description":"Presentación $7.000"},{"id":"postre_tiramisu_8000","title":"Postre tiramisú","description":"$8.000"},{"id":"gelatina_con_yogur_8000","title":"Gelatina con yogur","description":"$8.000"},{"id":"cheesecake_8000","title":"Cheesecake","description":"$8.000"},{"id":"postre_tres_leches_12000","title":"Postre tres leches","description":"Presentación $12.000"}
-    ]},
-    "6A":{"titulo":"Maltas","filas":[
-      {"id":"malta_mini_1900","title":"Malta mini","description":"$1.900"},{"id":"malta_30_ml_3000","title":"Malta 30 ml","description":"$3.000"},{"id":"malta_1_litro_4400","title":"Malta 1 litro","description":"$4.400"},{"id":"malta_1_5_litros_6800","title":"Malta 1,5 litros","description":"$6.800"},{"id":"malta_2_litros_7700","title":"Malta 2 litros","description":"$7.700"},{"id":"nav_otras_bebidas","title":"▶ Otras bebidas","description":"Ver más productos"}
-    ]},
-    "6B":{"titulo":"Otras bebidas","filas":[
-      {"id":"cifrut_pequeno_1000","title":"Cifrut pequeño","description":"$1.000"},{"id":"cifrut_400_ml_1600","title":"Cifrut 400 ml","description":"$1.600"},{"id":"big_cola_400_ml_1800","title":"Big cola 400 ml","description":"$1.800"},{"id":"big_cola_1_litro_3000","title":"Big cola 1 litro","description":"$3.000"},{"id":"cifrut_1_5_litros_4000","title":"Cifrut 1,5 litros","description":"$4.000"},{"id":"electrolit_9200","title":"Electrolit","description":"$9.200"}
-    ]},
-    "7A":{"titulo":"Yogures Alpina","filas":[
-      {"id":"yogofrutas_2300","title":"Yogofrutas","description":"$2.300"},{"id":"yogur_bolsa_2800","title":"Yogur bolsa","description":"$2.800"},{"id":"gelatina_bogi_3000","title":"Gelatina Bogi","description":"$3.000"},{"id":"yogur_original_3000","title":"Yogur Original","description":"$3.000"},{"id":"mini_bonyour_3500","title":"Mini Bonyour","description":"$3.500"},{"id":"yogur_premio_4200","title":"Yogur Premio","description":"$4.200"},{"id":"bonyour_5000","title":"Bonyour","description":"$5.000"},{"id":"yogur_1_litro_7500","title":"Yogur 1 litro","description":"$7.500"},{"id":"yogur_litro_8000","title":"Yogur litro","description":"$8.000"},{"id":"nav_avenas_leches_y_mas","title":"▶ Avenas, leches y más","description":"Ver más productos"}
-    ]},
-    "7B":{"titulo":"Avenas, leches y más","filas":[
-      {"id":"alpinito_1700","title":"Alpinito","description":"$1.700"},{"id":"avena_bolsa_2800","title":"Avena bolsa","description":"$2.800"},{"id":"alpina_bolsa_2800","title":"Alpina bolsa","description":"$2.800"},{"id":"cumis_alpina_3200","title":"Cumis Alpina","description":"$3.200"},{"id":"avena_fina_3900","title":"Avena fina","description":"$3.900"},{"id":"alpina_caja_4000","title":"Alpina caja","description":"$4.000"},{"id":"avena_vaso_4200","title":"Avena vaso","description":"$4.200"},{"id":"alpin_botella_5000","title":"Alpín botella","description":"$5.000"},{"id":"alpina_botella_5300","title":"Alpina botella","description":"$5.300"},{"id":"avena_800_ml_8000","title":"Avena 800 ml","description":"$8.000"}
-    ]},
-    "8A":{"titulo":"Gaseosas y Hit","filas":[
-      {"id":"hit_caja_1600","title":"Hit caja","description":"$1.600"},{"id":"gaseosa_50_ml_1800","title":"Gaseosa 50 ml","description":"$1.800"},{"id":"econolitro_4000","title":"Econolitro","description":"$4.000"},{"id":"gaseosa_1_75_litros_5000","title":"Gaseosa 1,75 litros","description":"$5.000"},{"id":"hit_1_litro_5000","title":"Hit 1 litro","description":"$5.000"},{"id":"hit_1_5_litros_5500","title":"Hit 1,5 litros","description":"$5.500"},{"id":"gaseosa_2_5_litros_6500","title":"Gaseosa 2,5 litros","description":"$6.500"},{"id":"gaseosa_3_litros_8500","title":"Gaseosa 3 litros","description":"$8.500"},{"id":"nav_energia_e_hidratacion","title":"▶ Energía e hidratación","description":"Ver más productos"},{"id":"nav_aguas_te_y_mas","title":"▶ Aguas, té y más","description":"Ver más productos"}
-    ]},
-    "8B":{"titulo":"Energía e hidratación","filas":[
-      {"id":"speed_max_botella_1800","title":"Speed max botella","description":"$1.800"},{"id":"speed_max_310_ml_2500","title":"Speed max 310 ml","description":"$2.500"},{"id":"speed_max_400_ml_2500","title":"Speed max 400 ml","description":"$2.500"},{"id":"speed_max_473_ml_3000","title":"Speed max 473 ml","description":"$3.000"},{"id":"gatorade_4000","title":"Gatorade","description":"$4.000"},{"id":"gatorlit_5000","title":"Gatorlit","description":"$5.000"},{"id":"red_bull_7500","title":"Red Bull","description":"$7.500"}
-    ]},
-    "8C":{"titulo":"Aguas, té y más","filas":[
-      {"id":"agua_pequena_1000","title":"Agua pequeña","description":"$1.000"},{"id":"h2o_pequena_1600","title":"H2O pequeña","description":"$1.600"},{"id":"aloe_vera_2000","title":"Aloe Vera","description":"$2.000"},{"id":"agua_natural_personal_2000","title":"Agua natural personal","description":"$2.000"},{"id":"agua_con_gas_2000","title":"Agua con gas","description":"$2.000"},{"id":"mister_tea_2700","title":"Mister Tea","description":"$2.700"},{"id":"natumalta_400_ml_2700","title":"Natumalta 400 ml","description":"$2.700"},{"id":"bretana_12_oz_o_personal_2800","title":"Bretaña 12 oz o personal","description":"$2.800"},{"id":"h2o_600_ml_3000","title":"H2O 600 ml","description":"$3.000"},{"id":"agua_personal_3000","title":"Agua Personal","description":"$3.000"}
-    ]},
-    "9A":{"titulo":"Coca-Cola y gaseosas","filas":[
-      {"id":"coca_cola_250_ml_2000","title":"Coca-Cola 250 ml","description":"$2.000"},{"id":"coca_cola_400_ml_3200","title":"Coca-Cola 400 ml","description":"$3.200"},{"id":"coca_cola_1_litro_5000","title":"Coca-Cola 1 litro","description":"$5.000"},{"id":"premio_1_5_litros_5000","title":"Premio 1,5 litros","description":"$5.000"},{"id":"quatro_2_5_litros_6000","title":"Quatro 2,5 litros","description":"$6.000"},{"id":"coca_cola_1_5_litros_7000","title":"Coca-Cola 1,5 litros","description":"$7.000"},{"id":"coca_cola_2_5_litros_8500","title":"Coca-Cola 2,5 litros","description":"$8.500"},{"id":"coca_cola_3_litros_11500","title":"Coca-Cola 3 litros","description":"$11.500"},{"id":"nav_jugos_y_aguas","title":"▶ Jugos y aguas","description":"Ver más productos"}
-    ]},
-    "9B":{"titulo":"Jugos y aguas","filas":[
-      {"id":"agua_saborizada_pequena_1400","title":"Agua saborizada pequeña","description":"$1.400"},{"id":"agua_brisa_600_ml_2000","title":"Agua Brisa 600 ml","description":"$2.000"},{"id":"del_valle_400_ml_2500","title":"Del Valle 400 ml","description":"$2.500"},{"id":"saborizada_600_ml_3000","title":"Saborizada 600 ml","description":"$3.000"},{"id":"del_valle_1_5_litros_5000","title":"Del Valle 1,5 litros","description":"$5.000"},{"id":"del_valle_frutas_5500","title":"Del Valle Frutas","description":"$5.500"}
-    ]}
+    "1A": {
+      "titulo": "Panadería tradicional",
+      "filas": [
+        {
+          "id": "pan_alinado_500",
+          "title": "Pan aliñado",
+          "description": "Presentación $500"
+        },
+        {
+          "id": "pan_alinado_1000",
+          "title": "Pan aliñado",
+          "description": "Presentación $1.000"
+        },
+        {
+          "id": "pan_alinado_2000",
+          "title": "Pan aliñado",
+          "description": "Presentación $2.000"
+        },
+        {
+          "id": "pan_de_maiz_600",
+          "title": "Pan de maíz",
+          "description": "$600"
+        },
+        {
+          "id": "pan_molino_2000",
+          "title": "Pan Molino",
+          "description": "Presentación $2.000"
+        },
+        {
+          "id": "pan_molino_3000",
+          "title": "Pan Molino",
+          "description": "Presentación $3.000"
+        },
+        {
+          "id": "pan_molino_5000",
+          "title": "Pan Molino",
+          "description": "Presentación $5.000"
+        },
+        {
+          "id": "nav_pan_abuela",
+          "title": "▶ Pan abuela",
+          "description": "Ver más productos"
+        },
+        {
+          "id": "nav_atras",
+          "title": "? Atr?s",
+          "description": "Volver al paso anterior"
+        }
+      ]
+    },
+    "1B": {
+      "titulo": "Pan abuela",
+      "filas": [
+        {
+          "id": "pan_abuela_1200",
+          "title": "Pan abuela",
+          "description": "Presentación $1.200"
+        },
+        {
+          "id": "pan_abuela_2500",
+          "title": "Pan abuela",
+          "description": "Presentación $2.500"
+        },
+        {
+          "id": "pan_abuela_3500",
+          "title": "Pan abuela",
+          "description": "Presentación $3.500"
+        },
+        {
+          "id": "pan_abuela_5000",
+          "title": "Pan abuela",
+          "description": "Presentación $5.000"
+        },
+        {
+          "id": "pan_abuela_7000",
+          "title": "Pan abuela",
+          "description": "Presentación $7.000"
+        },
+        {
+          "id": "nav_atras",
+          "title": "? Atr?s",
+          "description": "Volver al paso anterior"
+        }
+      ]
+    },
+    "2A": {
+      "titulo": "Salados y tostadas",
+      "filas": [
+        {
+          "id": "pan_queso_500",
+          "title": "Pan queso",
+          "description": "$500"
+        },
+        {
+          "id": "pan_de_achiras_500",
+          "title": "Pan de achiras",
+          "description": "$500"
+        },
+        {
+          "id": "quesadilla_1200",
+          "title": "Quesadilla",
+          "description": "$1.200"
+        },
+        {
+          "id": "tostada_alinada_1700",
+          "title": "Tostada aliñada",
+          "description": "$1.700"
+        },
+        {
+          "id": "tostada_integral_1700",
+          "title": "Tostada integral",
+          "description": "$1.700"
+        },
+        {
+          "id": "pan_pollo_1900",
+          "title": "Pan pollo",
+          "description": "$1.900"
+        },
+        {
+          "id": "hawaiano_2000",
+          "title": "Hawaiano",
+          "description": "$2.000"
+        },
+        {
+          "id": "nav_hojaldres_y_pastelitos",
+          "title": "▶ Hojaldres y pastelitos",
+          "description": "Ver más productos"
+        },
+        {
+          "id": "nav_dulces_e_integrales",
+          "title": "▶ Dulces e integrales",
+          "description": "Ver más productos"
+        },
+        {
+          "id": "nav_atras",
+          "title": "? Atr?s",
+          "description": "Volver al paso anterior"
+        }
+      ]
+    },
+    "2B": {
+      "titulo": "Hojaldres y pastelitos",
+      "filas": [
+        {
+          "id": "lenguas_500",
+          "title": "Lenguas",
+          "description": "$500"
+        },
+        {
+          "id": "croissant_1300",
+          "title": "Croissant",
+          "description": "$1.300"
+        },
+        {
+          "id": "chicharrones_1500",
+          "title": "Chicharrones",
+          "description": "$1.500"
+        },
+        {
+          "id": "orejas_1600",
+          "title": "Orejas",
+          "description": "$1.600"
+        },
+        {
+          "id": "panuelos_1600",
+          "title": "Pañuelos",
+          "description": "$1.600"
+        },
+        {
+          "id": "peras_2000",
+          "title": "Peras",
+          "description": "$2.000"
+        },
+        {
+          "id": "rollos_2000",
+          "title": "Rollos",
+          "description": "$2.000"
+        },
+        {
+          "id": "pionono_2000",
+          "title": "Pionono",
+          "description": "$2.000"
+        },
+        {
+          "id": "besitos_2200",
+          "title": "Besitos",
+          "description": "$2.200"
+        },
+        {
+          "id": "nav_atras",
+          "title": "? Atr?s",
+          "description": "Volver al paso anterior"
+        }
+      ]
+    },
+    "2C": {
+      "titulo": "Dulces e integrales",
+      "filas": [
+        {
+          "id": "pan_royal_500",
+          "title": "Pan Royal",
+          "description": "$500"
+        },
+        {
+          "id": "mogolla_integral_500",
+          "title": "Mogolla integral",
+          "description": "$500"
+        },
+        {
+          "id": "agridulce_700",
+          "title": "Agridulce",
+          "description": "$700"
+        },
+        {
+          "id": "pan_integral_1200",
+          "title": "Pan integral",
+          "description": "Presentación $1.200"
+        },
+        {
+          "id": "roscones_2000",
+          "title": "Roscones",
+          "description": "$2.000"
+        },
+        {
+          "id": "pan_trenza_2000",
+          "title": "Pan trenza",
+          "description": "$2.000"
+        },
+        {
+          "id": "pan_integral_2300",
+          "title": "Pan integral",
+          "description": "Presentación $2.300"
+        },
+        {
+          "id": "pan_galleta_2500",
+          "title": "Pan galleta",
+          "description": "$2.500"
+        },
+        {
+          "id": "nav_atras",
+          "title": "? Atr?s",
+          "description": "Volver al paso anterior"
+        }
+      ]
+    },
+    "3A": {
+      "titulo": "Donas y repostería",
+      "filas": [
+        {
+          "id": "donas_de_azucar_1700",
+          "title": "Donas de azúcar",
+          "description": "$1.700"
+        },
+        {
+          "id": "donas_2000",
+          "title": "Donas",
+          "description": "$2.000"
+        },
+        {
+          "id": "alfajores_2200",
+          "title": "Alfajores",
+          "description": "$2.200"
+        },
+        {
+          "id": "dona_de_chocolate_2500",
+          "title": "Dona de chocolate",
+          "description": "$2.500"
+        },
+        {
+          "id": "cuques_2500",
+          "title": "Cuques",
+          "description": "$2.500"
+        },
+        {
+          "id": "brownie_3500",
+          "title": "Brownie",
+          "description": "$3.500"
+        },
+        {
+          "id": "mil_hojas_3500",
+          "title": "Mil hojas",
+          "description": "$3.500"
+        },
+        {
+          "id": "pan_pizza_3200",
+          "title": "Pan pizza",
+          "description": "$3.200"
+        },
+        {
+          "id": "porcion_torta_chocolate_10000",
+          "title": "Porción torta chocolate",
+          "description": "$10.000"
+        },
+        {
+          "id": "nav_atras",
+          "title": "? Atr?s",
+          "description": "Volver al paso anterior"
+        }
+      ]
+    },
+    "4A": {
+      "titulo": "Porciones y tortas ¼",
+      "filas": [
+        {
+          "id": "porcion_torta_zanahoria_o_banano_1800",
+          "title": "Porción zanahoria/banano",
+          "description": "Porción de torta de zanahoria o banano · $1.800"
+        },
+        {
+          "id": "porcion_torta_vainilla_2500",
+          "title": "Porción torta vainilla",
+          "description": "$2.500"
+        },
+        {
+          "id": "porcion_de_torta_2700",
+          "title": "Porción de torta",
+          "description": "$2.700"
+        },
+        {
+          "id": "mini_genoesa_13000",
+          "title": "Mini genoesa",
+          "description": "$13.000"
+        },
+        {
+          "id": "torta_genoesa_cuarto_oreo_20000",
+          "title": "Torta genoesa ¼ Oreo",
+          "description": "$20.000"
+        },
+        {
+          "id": "torta_fria_cuarto_24000",
+          "title": "Torta fría ¼",
+          "description": "$24.000"
+        },
+        {
+          "id": "torta_fria_cuarto_chocolate_33000",
+          "title": "Torta fría ¼ chocolate",
+          "description": "$33.000"
+        },
+        {
+          "id": "nav_tortas_medio_tres_cuartos_y_1_libra",
+          "title": "▶ Tortas ½, ¾ y 1 libra",
+          "description": "Ver más productos"
+        },
+        {
+          "id": "nav_atras",
+          "title": "? Atr?s",
+          "description": "Volver al paso anterior"
+        }
+      ]
+    },
+    "4B": {
+      "titulo": "Tortas ½, ¾ y 1 libra",
+      "filas": [
+        {
+          "id": "torta_oreo_medio_31000",
+          "title": "Torta Oreo ½",
+          "description": "$31.000"
+        },
+        {
+          "id": "torta_fria_medio_38000",
+          "title": "Torta fría ½",
+          "description": "$38.000"
+        },
+        {
+          "id": "torta_genoesa_o_chocolate_medio_60000",
+          "title": "Genoesa o choc. ½",
+          "description": "Torta genoesa o chocolate ½ · $60.000"
+        },
+        {
+          "id": "torta_oreo_tres_cuartos_53000",
+          "title": "Torta Oreo ¾",
+          "description": "$53.000"
+        },
+        {
+          "id": "torta_fria_tres_cuartos_60000",
+          "title": "Torta fría ¾",
+          "description": "$60.000"
+        },
+        {
+          "id": "torta_genoesa_o_chocolate_tres_cuartos_80000",
+          "title": "Genoesa o choc. ¾",
+          "description": "Torta genoesa o chocolate ¾ · $80.000"
+        },
+        {
+          "id": "torta_oreo_1_libra_60000",
+          "title": "Torta Oreo 1 libra",
+          "description": "$60.000"
+        },
+        {
+          "id": "torta_fria_1_libra_70000",
+          "title": "Torta fría 1 libra",
+          "description": "$70.000"
+        },
+        {
+          "id": "torta_genoesa_o_chocolate_1_libra_100000",
+          "title": "Genoesa o choc. 1 libra",
+          "description": "Torta genoesa o chocolate 1 libra · $100.000"
+        },
+        {
+          "id": "nav_atras",
+          "title": "? Atr?s",
+          "description": "Volver al paso anterior"
+        }
+      ]
+    },
+    "5A": {
+      "titulo": "Postres",
+      "filas": [
+        {
+          "id": "vasos_de_gelatina_4500",
+          "title": "Vasos de gelatina",
+          "description": "$4.500"
+        },
+        {
+          "id": "vaso_de_fresas_4500",
+          "title": "Vaso de fresas",
+          "description": "$4.500"
+        },
+        {
+          "id": "postre_tres_leches_7000",
+          "title": "Postre tres leches",
+          "description": "Presentación $7.000"
+        },
+        {
+          "id": "postre_tiramisu_8000",
+          "title": "Postre tiramisú",
+          "description": "$8.000"
+        },
+        {
+          "id": "gelatina_con_yogur_8000",
+          "title": "Gelatina con yogur",
+          "description": "$8.000"
+        },
+        {
+          "id": "cheesecake_8000",
+          "title": "Cheesecake",
+          "description": "$8.000"
+        },
+        {
+          "id": "postre_tres_leches_12000",
+          "title": "Postre tres leches",
+          "description": "Presentación $12.000"
+        },
+        {
+          "id": "nav_atras",
+          "title": "? Atr?s",
+          "description": "Volver al paso anterior"
+        },
+        {
+          "id": "yogur_litro_8000",
+          "title": "Yogur litro",
+          "description": "$8.000"
+        },
+        {
+          "id": "alpinito_1700",
+          "title": "Alpinito",
+          "description": "$1.700"
+        }
+      ]
+    },
+    "6A": {
+      "titulo": "Maltas",
+      "filas": [
+        {
+          "id": "malta_mini_1900",
+          "title": "Malta mini",
+          "description": "$1.900"
+        },
+        {
+          "id": "malta_30_ml_3000",
+          "title": "Malta 30 ml",
+          "description": "$3.000"
+        },
+        {
+          "id": "malta_1_litro_4400",
+          "title": "Malta 1 litro",
+          "description": "$4.400"
+        },
+        {
+          "id": "malta_1_5_litros_6800",
+          "title": "Malta 1,5 litros",
+          "description": "$6.800"
+        },
+        {
+          "id": "malta_2_litros_7700",
+          "title": "Malta 2 litros",
+          "description": "$7.700"
+        },
+        {
+          "id": "nav_otras_bebidas",
+          "title": "▶ Otras bebidas",
+          "description": "Ver más productos"
+        },
+        {
+          "id": "nav_atras",
+          "title": "? Atr?s",
+          "description": "Volver al paso anterior"
+        }
+      ]
+    },
+    "6B": {
+      "titulo": "Otras bebidas",
+      "filas": [
+        {
+          "id": "cifrut_pequeno_1000",
+          "title": "Cifrut pequeño",
+          "description": "$1.000"
+        },
+        {
+          "id": "cifrut_400_ml_1600",
+          "title": "Cifrut 400 ml",
+          "description": "$1.600"
+        },
+        {
+          "id": "big_cola_400_ml_1800",
+          "title": "Big cola 400 ml",
+          "description": "$1.800"
+        },
+        {
+          "id": "big_cola_1_litro_3000",
+          "title": "Big cola 1 litro",
+          "description": "$3.000"
+        },
+        {
+          "id": "cifrut_1_5_litros_4000",
+          "title": "Cifrut 1,5 litros",
+          "description": "$4.000"
+        },
+        {
+          "id": "electrolit_9200",
+          "title": "Electrolit",
+          "description": "$9.200"
+        },
+        {
+          "id": "econolitro_4000",
+          "title": "Econolitro",
+          "description": "$4.000"
+        },
+        {
+          "id": "nav_atras",
+          "title": "? Atr?s",
+          "description": "Volver al paso anterior"
+        },
+        {
+          "id": "pan_cana_2500",
+          "title": "Pan caña",
+          "description": "$2.500"
+        },
+        {
+          "id": "pan_crema_2500",
+          "title": "Pan crema",
+          "description": "$2.500"
+        }
+      ]
+    },
+    "7A": {
+      "titulo": "Yogures Alpina",
+      "filas": [
+        {
+          "id": "yogofrutas_2300",
+          "title": "Yogofrutas",
+          "description": "$2.300"
+        },
+        {
+          "id": "yogur_bolsa_2800",
+          "title": "Yogur bolsa",
+          "description": "$2.800"
+        },
+        {
+          "id": "gelatina_bogi_3000",
+          "title": "Gelatina Bogi",
+          "description": "$3.000"
+        },
+        {
+          "id": "yogur_original_3000",
+          "title": "Yogur Original",
+          "description": "$3.000"
+        },
+        {
+          "id": "mini_bonyour_3500",
+          "title": "Mini Bonyour",
+          "description": "$3.500"
+        },
+        {
+          "id": "yogur_premio_4200",
+          "title": "Yogur Premio",
+          "description": "$4.200"
+        },
+        {
+          "id": "bonyour_5000",
+          "title": "Bonyour",
+          "description": "$5.000"
+        },
+        {
+          "id": "yogur_1_litro_7500",
+          "title": "Yogur 1 litro",
+          "description": "$7.500"
+        },
+        {
+          "id": "nav_avenas_leches_y_mas",
+          "title": "▶ Avenas, leches y más",
+          "description": "Ver más productos"
+        },
+        {
+          "id": "nav_atras",
+          "title": "? Atr?s",
+          "description": "Volver al paso anterior"
+        }
+      ]
+    },
+    "7B": {
+      "titulo": "Avenas, leches y más",
+      "filas": [
+        {
+          "id": "avena_bolsa_2800",
+          "title": "Avena bolsa",
+          "description": "$2.800"
+        },
+        {
+          "id": "alpina_bolsa_2800",
+          "title": "Alpina bolsa",
+          "description": "$2.800"
+        },
+        {
+          "id": "cumis_alpina_3200",
+          "title": "Cumis Alpina",
+          "description": "$3.200"
+        },
+        {
+          "id": "avena_fina_3900",
+          "title": "Avena fina",
+          "description": "$3.900"
+        },
+        {
+          "id": "alpina_caja_4000",
+          "title": "Alpina caja",
+          "description": "$4.000"
+        },
+        {
+          "id": "avena_vaso_4200",
+          "title": "Avena vaso",
+          "description": "$4.200"
+        },
+        {
+          "id": "alpin_botella_5000",
+          "title": "Alpín botella",
+          "description": "$5.000"
+        },
+        {
+          "id": "alpina_botella_5300",
+          "title": "Alpina botella",
+          "description": "$5.300"
+        },
+        {
+          "id": "avena_800_ml_8000",
+          "title": "Avena 800 ml",
+          "description": "$8.000"
+        },
+        {
+          "id": "nav_atras",
+          "title": "? Atr?s",
+          "description": "Volver al paso anterior"
+        }
+      ]
+    },
+    "8A": {
+      "titulo": "Gaseosas y Hit",
+      "filas": [
+        {
+          "id": "hit_caja_1600",
+          "title": "Hit caja",
+          "description": "$1.600"
+        },
+        {
+          "id": "gaseosa_50_ml_1800",
+          "title": "Gaseosa 50 ml",
+          "description": "$1.800"
+        },
+        {
+          "id": "gaseosa_1_75_litros_5000",
+          "title": "Gaseosa 1,75 litros",
+          "description": "$5.000"
+        },
+        {
+          "id": "hit_1_litro_5000",
+          "title": "Hit 1 litro",
+          "description": "$5.000"
+        },
+        {
+          "id": "hit_1_5_litros_5500",
+          "title": "Hit 1,5 litros",
+          "description": "$5.500"
+        },
+        {
+          "id": "gaseosa_2_5_litros_6500",
+          "title": "Gaseosa 2,5 litros",
+          "description": "$6.500"
+        },
+        {
+          "id": "gaseosa_3_litros_8500",
+          "title": "Gaseosa 3 litros",
+          "description": "$8.500"
+        },
+        {
+          "id": "nav_energia_e_hidratacion",
+          "title": "▶ Energía e hidratación",
+          "description": "Ver más productos"
+        },
+        {
+          "id": "nav_aguas_te_y_mas",
+          "title": "▶ Aguas, té y más",
+          "description": "Ver más productos"
+        },
+        {
+          "id": "nav_atras",
+          "title": "? Atr?s",
+          "description": "Volver al paso anterior"
+        }
+      ]
+    },
+    "8B": {
+      "titulo": "Energía e hidratación",
+      "filas": [
+        {
+          "id": "speed_max_botella_1800",
+          "title": "Speed max botella",
+          "description": "$1.800"
+        },
+        {
+          "id": "speed_max_310_ml_2500",
+          "title": "Speed max 310 ml",
+          "description": "$2.500"
+        },
+        {
+          "id": "speed_max_400_ml_2500",
+          "title": "Speed max 400 ml",
+          "description": "$2.500"
+        },
+        {
+          "id": "speed_max_473_ml_3000",
+          "title": "Speed max 473 ml",
+          "description": "$3.000"
+        },
+        {
+          "id": "gatorade_4000",
+          "title": "Gatorade",
+          "description": "$4.000"
+        },
+        {
+          "id": "gatorlit_5000",
+          "title": "Gatorlit",
+          "description": "$5.000"
+        },
+        {
+          "id": "red_bull_7500",
+          "title": "Red Bull",
+          "description": "$7.500"
+        },
+        {
+          "id": "nav_atras",
+          "title": "? Atr?s",
+          "description": "Volver al paso anterior"
+        },
+        {
+          "id": "aloe_vera_2000",
+          "title": "Aloe Vera",
+          "description": "$2.000"
+        }
+      ]
+    },
+    "8C": {
+      "titulo": "Aguas, té y más",
+      "filas": [
+        {
+          "id": "agua_pequena_1000",
+          "title": "Agua pequeña",
+          "description": "$1.000"
+        },
+        {
+          "id": "h2o_pequena_1600",
+          "title": "H2O pequeña",
+          "description": "$1.600"
+        },
+        {
+          "id": "agua_natural_personal_2000",
+          "title": "Agua natural personal",
+          "description": "$2.000"
+        },
+        {
+          "id": "agua_con_gas_2000",
+          "title": "Agua con gas",
+          "description": "$2.000"
+        },
+        {
+          "id": "mister_tea_2700",
+          "title": "Mister Tea",
+          "description": "$2.700"
+        },
+        {
+          "id": "natumalta_400_ml_2700",
+          "title": "Natumalta 400 ml",
+          "description": "$2.700"
+        },
+        {
+          "id": "bretana_12_oz_o_personal_2800",
+          "title": "Bretaña 12 oz o personal",
+          "description": "$2.800"
+        },
+        {
+          "id": "h2o_600_ml_3000",
+          "title": "H2O 600 ml",
+          "description": "$3.000"
+        },
+        {
+          "id": "agua_personal_3000",
+          "title": "Agua Personal",
+          "description": "$3.000"
+        },
+        {
+          "id": "nav_atras",
+          "title": "? Atr?s",
+          "description": "Volver al paso anterior"
+        }
+      ]
+    },
+    "9A": {
+      "titulo": "Coca-Cola y gaseosas",
+      "filas": [
+        {
+          "id": "coca_cola_250_ml_2000",
+          "title": "Coca-Cola 250 ml",
+          "description": "$2.000"
+        },
+        {
+          "id": "coca_cola_400_ml_3200",
+          "title": "Coca-Cola 400 ml",
+          "description": "$3.200"
+        },
+        {
+          "id": "coca_cola_1_litro_5000",
+          "title": "Coca-Cola 1 litro",
+          "description": "$5.000"
+        },
+        {
+          "id": "premio_1_5_litros_5000",
+          "title": "Premio 1,5 litros",
+          "description": "$5.000"
+        },
+        {
+          "id": "quatro_2_5_litros_6000",
+          "title": "Quatro 2,5 litros",
+          "description": "$6.000"
+        },
+        {
+          "id": "coca_cola_1_5_litros_7000",
+          "title": "Coca-Cola 1,5 litros",
+          "description": "$7.000"
+        },
+        {
+          "id": "coca_cola_2_5_litros_8500",
+          "title": "Coca-Cola 2,5 litros",
+          "description": "$8.500"
+        },
+        {
+          "id": "coca_cola_3_litros_11500",
+          "title": "Coca-Cola 3 litros",
+          "description": "$11.500"
+        },
+        {
+          "id": "nav_jugos_y_aguas",
+          "title": "▶ Jugos y aguas",
+          "description": "Ver más productos"
+        },
+        {
+          "id": "nav_atras",
+          "title": "? Atr?s",
+          "description": "Volver al paso anterior"
+        }
+      ]
+    },
+    "9B": {
+      "titulo": "Jugos y aguas",
+      "filas": [
+        {
+          "id": "agua_saborizada_pequena_1400",
+          "title": "Agua saborizada pequeña",
+          "description": "$1.400"
+        },
+        {
+          "id": "agua_brisa_600_ml_2000",
+          "title": "Agua Brisa 600 ml",
+          "description": "$2.000"
+        },
+        {
+          "id": "del_valle_400_ml_2500",
+          "title": "Del Valle 400 ml",
+          "description": "$2.500"
+        },
+        {
+          "id": "saborizada_600_ml_3000",
+          "title": "Saborizada 600 ml",
+          "description": "$3.000"
+        },
+        {
+          "id": "del_valle_1_5_litros_5000",
+          "title": "Del Valle 1,5 litros",
+          "description": "$5.000"
+        },
+        {
+          "id": "del_valle_frutas_5500",
+          "title": "Del Valle Frutas",
+          "description": "$5.500"
+        },
+        {
+          "id": "nav_atras",
+          "title": "? Atr?s",
+          "description": "Volver al paso anterior"
+        }
+      ]
+    }
   }
 }

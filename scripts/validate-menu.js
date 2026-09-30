@@ -4,6 +4,7 @@ import { products } from "../src/data/products.js";
 const errors = [];
 const ids = new Set();
 const addId = (id, location) => {
+  if (id === "nav_atras") return;
   if (ids.has(id)) errors.push(`id duplicado "${id}" (${location})`);
   ids.add(id);
 };
@@ -29,11 +30,14 @@ const navigationTargets = {
 
 for (const [listId, list] of Object.entries(menu.listas)) {
   if (list.filas.length > 10) errors.push(`la lista "${listId}" tiene ${list.filas.length} filas; el máximo es 10`);
+  if (!list.filas.some((row) => row.id === "nav_atras")) {
+    errors.push(`la lista "${listId}" no tiene la fila nav_atras`);
+  }
   for (const row of list.filas) {
     addId(row.id, `lista ${listId}`);
     if (row.title.length > 24) errors.push(`el título "${row.id}" supera 24 caracteres`);
     if (row.description.length > 72) errors.push(`la descripción "${row.id}" supera 72 caracteres`);
-    if (row.id.startsWith("nav_") && !menu.listas[navigationTargets[row.id]]) {
+    if (row.id.startsWith("nav_") && row.id !== "nav_atras" && !menu.listas[navigationTargets[row.id]]) {
       errors.push(`"${row.id}" apunta a una lista inexistente`);
     }
   }
