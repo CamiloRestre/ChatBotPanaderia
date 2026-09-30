@@ -29,8 +29,8 @@ const HUMAN_ATTENTION_SCHEDULE =
 
 const PAYMENT_INFO = {
   bank: process.env.PAYMENT_BANK || "Nequi",
-  accountNumber: process.env.PAYMENT_ACCOUNT_NUMBER || "3000000000",
-  holderName: process.env.PAYMENT_HOLDER_NAME || "Nombre del Titular"
+  accountNumber: process.env.PAYMENT_ACCOUNT_NUMBER || "3016801729",
+  holderName: process.env.PAYMENT_HOLDER_NAME || "Nelson Albeiro Pineda Salazar"
 };
 
 const GREETINGS = [
