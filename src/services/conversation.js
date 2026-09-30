@@ -1116,8 +1116,8 @@ async function sendAddMoreButtons(phone, state) {
     phone,
     `${buildCartSummary(state)}\n\n¿Qué deseas hacer ahora?`,
     [
-      { id: "add_more", title: "Agregar producto" },
-      { id: "finalize", title: "Finalizar orden" }
+      { id: "add_product", title: "Agregar producto" },
+      { id: "finish_order", title: "Finalizar orden" }
     ],
     "🛒 Tu pedido"
   );
@@ -1126,17 +1126,21 @@ async function sendAddMoreButtons(phone, state) {
 }
 
 async function handleAddMoreStep(phone, text, state) {
-  if (text === "add_more" || isYes(text)) {
-    return askProductName(phone, state, "Perfecto 😊 ¿Qué otro producto deseas agregar? Escríbeme el nombre o escribe *menu* para ver la carta.");
+  if (text === "add_product") {
+    state.step = "CATEGORY_SELECTED";
+    state.currentListId = null;
+    state.navigationHistory = [];
+    states.set(phone, state);
+    return sendCarta(phone, state);
   }
 
-  if (text === "finalize" || isNo(text)) {
+  if (text === "finish_order") {
     state.step = "ASK_CUSTOMER_NAME";
     states.set(phone, state);
 
     return sendTextAndReturn(
       phone,
-      `${buildCartSummary(state)}\n\nPara registrar tu pedido necesito algunos datos.\n\n¿Me regalas tu *nombre completo*, por favor?\n\n_Escribe "atrás" para volver._`
+      `${buildCartSummary(state)}\n\nPerfecto 😊 Para dejar tu pedido registrado, ¿me regalas tu *nombre completo*?\n\n_Escribe "atrás" para volver._`
     );
   }
 
