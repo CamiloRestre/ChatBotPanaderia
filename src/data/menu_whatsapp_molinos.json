@@ -500,11 +500,6 @@
           "description": "Presentación $12.000"
         },
         {
-          "id": "nav_atras",
-          "title": "? Atr?s",
-          "description": "Volver al paso anterior"
-        },
-        {
           "id": "yogur_litro_8000",
           "title": "Yogur litro",
           "description": "$8.000"
@@ -513,6 +508,11 @@
           "id": "alpinito_1700",
           "title": "Alpinito",
           "description": "$1.700"
+        },
+        {
+          "id": "nav_atras",
+          "title": "? Atr?s",
+          "description": "Volver al paso anterior"
         }
       ]
     },
@@ -595,11 +595,6 @@
           "description": "$4.000"
         },
         {
-          "id": "nav_atras",
-          "title": "? Atr?s",
-          "description": "Volver al paso anterior"
-        },
-        {
           "id": "pan_cana_2500",
           "title": "Pan caña",
           "description": "$2.500"
@@ -608,6 +603,11 @@
           "id": "pan_crema_2500",
           "title": "Pan crema",
           "description": "$2.500"
+        },
+        {
+          "id": "nav_atras",
+          "title": "? Atr?s",
+          "description": "Volver al paso anterior"
         }
       ]
     },
@@ -815,14 +815,14 @@
           "description": "$7.500"
         },
         {
-          "id": "nav_atras",
-          "title": "? Atr?s",
-          "description": "Volver al paso anterior"
-        },
-        {
           "id": "aloe_vera_2000",
           "title": "Aloe Vera",
           "description": "$2.000"
+        },
+        {
+          "id": "nav_atras",
+          "title": "? Atr?s",
+          "description": "Volver al paso anterior"
         }
       ]
     },
