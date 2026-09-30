@@ -325,6 +325,11 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
     return handleBack(phone);
   }
 
+  if (isExactCommand(text, [...GREETINGS, ...MENU_COMMANDS])) {
+    getFreshState(phone);
+    return sendMainMenu(phone);
+  }
+
   if (state && ADVANCED_FLOW_STEPS.has(state.step) && (isGreetingLike(text) || isMenuCommand(text))) {
     state.previousStep = state.step;
     state.step = "CONFIRM_CANCEL_ORDER";
@@ -333,11 +338,6 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
       phone,
       "Estás en medio de un pedido. ¿Quieres cancelarlo y volver al menú?\n\nResponde *sí* para cancelar o *no* para continuar."
     );
-  }
-
-  if (isExactCommand(text, [...GREETINGS, ...MENU_COMMANDS])) {
-    getFreshState(phone);
-    return sendMainMenu(phone);
   }
 
   if (isExactCommand(text, HUMAN_KEYWORDS) || isHumanRequest(text)) {
@@ -666,10 +666,30 @@ async function handleBack(phone) {
 // ---------------------------------------------------------------------------
 
 async function sendMainMenu(phone) {
-  return sendCarta(phone, {
-    step: "MAIN_MENU",
-    cart: states.get(phone)?.cart || []
-  });
+  getFreshState(phone);
+  await sendTextAndReturn(
+    phone,
+    `¡Hola! 👋 Bienvenido/a a ${BAKERY_NAME}. ¿En qué te puedo ayudar?`
+  );
+
+  await sendWhatsAppList(
+    phone,
+    "Elige una opción principal:",
+    "Ver opciones",
+    [{
+      title: "Opciones principales",
+      rows: [
+        { id: "menu_ver_carta", title: "Ver la carta", description: "Revisa todos nuestros productos" },
+        { id: "menu_hacer_pedido", title: "Hacer un pedido", description: "Agrega productos al carrito" },
+        { id: "menu_recomendar", title: "Recomiéndame algo", description: "Sugerencias según tu antojo" },
+        { id: "menu_horarios", title: "Horarios y ubicación", description: "Dirección y horario de atención" },
+        { id: "menu_asesor", title: "Hablar con alguien", description: "Atención personalizada" }
+      ]
+    }],
+    `Hola 👋 ${BAKERY_NAME}`
+  );
+
+  return "saludo y menú principal enviados";
 }
 
 async function handleMainMenuStep(phone, text, rawText, state) {
