@@ -11,6 +11,19 @@ export const CATEGORY_BY_ID = Object.fromEntries(
   menuPrincipal.map((category) => [category.id, category])
 );
 
+const LIST_CATEGORY = Object.fromEntries([
+  ...menuPrincipal.map((category) => [category.primera_lista, category.id]),
+  ["1B", "cat_panaderia_tradicional"],
+  ["2B", "cat_hojaldres_especiales"],
+  ["2C", "cat_hojaldres_especiales"],
+  ["4B", "cat_tortas"],
+  ["6B", "cat_maltas_bebidas"],
+  ["7B", "cat_alpina"],
+  ["8B", "cat_postobon"],
+  ["8C", "cat_postobon"],
+  ["9B", "cat_coca_cola"]
+]);
+
 export const NAVIGATION_TARGETS = Object.fromEntries(
   Object.values(menuLists)
     .flatMap((list) => list.filas)
@@ -53,7 +66,7 @@ export const products = Object.entries(menuLists).flatMap(([listId, list]) =>
     .filter((row) => !row.id.startsWith("nav_"))
     .map((row) => {
       const name = fullName(row);
-      const category = menuPrincipal.find((item) => item.primera_lista === listId)?.id || listId;
+      const category = LIST_CATEGORY[listId] || listId;
       return {
         id: row.id,
         name,

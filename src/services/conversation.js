@@ -108,7 +108,8 @@ const NEGATIVE_KNOWLEDGE = ["no tengo", "no manejamos", "no vendemos", "no hacem
 const ADVANCED_FLOW_STEPS = new Set([
   "CATEGORY_SELECTED", "PRODUCT_LIST_SHOWN", "PRODUCT_FOUND", "ASK_QUANTITY", "ASK_NOTE",
   "ASK_NOTE_TEXT", "ASK_ADD_MORE", "ASK_CUSTOMER_NAME", "ASK_PHONE", "ASK_ADDRESS",
-  "ASK_NEIGHBORHOOD", "ASK_PAYMENT_METHOD", "ASK_RECO_CATEGORY", "ASK_RECO_MOOD",
+  "ASK_NEIGHBORHOOD", "ASK_CONTACT_PHONE", "ASK_OTHER_PHONE", "ASK_PAYMENT_METHOD",
+  "ASK_RECO_CATEGORY", "ASK_RECO_MOOD",
   "SHOW_RECOMMENDATIONS", "ASK_LEAD_NAME", "ASK_LEAD_NEED"
 ]);
 
@@ -275,7 +276,9 @@ const STEPS_HISTORY = {
   ASK_PHONE: "ASK_CUSTOMER_NAME",
   ASK_ADDRESS: "ASK_PHONE",
   ASK_NEIGHBORHOOD: "ASK_ADDRESS",
-  ASK_PAYMENT_METHOD: "ASK_NEIGHBORHOOD",
+  ASK_CONTACT_PHONE: "ASK_NEIGHBORHOOD",
+  ASK_OTHER_PHONE: "ASK_CONTACT_PHONE",
+  ASK_PAYMENT_METHOD: "ASK_CONTACT_PHONE",
   CONFIRM_CANCEL_ORDER: null
 };
 
@@ -447,6 +450,12 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
     case "ASK_NEIGHBORHOOD":
       return handleNeighborhoodStep(phone, rawText, state);
 
+    case "ASK_CONTACT_PHONE":
+      return handleContactPhoneStep(phone, text, state);
+
+    case "ASK_OTHER_PHONE":
+      return handleOtherPhoneStep(phone, rawText, state);
+
     case "ASK_PAYMENT_METHOD":
       return handlePaymentMethodStep(phone, text, state);
 
@@ -543,6 +552,13 @@ function resendStepPrompt(phone, state) {
       return sendTextAndReturn(phone, "¿En qué barrio queda?");
     case "ASK_PAYMENT_METHOD":
       return sendPaymentQuestion(phone);
+    case "ASK_CONTACT_PHONE":
+      return sendContactPhoneQuestion(phone, state);
+    case "ASK_OTHER_PHONE":
+      return sendTextAndReturn(
+        phone,
+        "Escribe el número de contacto. Ejemplo: 3001234567\n\nSi el domiciliario no encuentra la dirección, lo llamará a este número."
+      );
     case "ASK_RECO_CATEGORY":
       return sendRecoCategoryQuestion(phone);
     case "ASK_RECO_MOOD":
@@ -577,6 +593,7 @@ async function handleBack(phone) {
   }
 
   const previousStep = STEPS_HISTORY[state.step];
+  console.log("🔙 Cliente tocó Atrás. Volviendo al paso anterior:", previousStep);
 
   if (!previousStep) {
     return sendTextAndReturn(phone, "No puedo retroceder más. Escribe *menu* para reiniciar.");
@@ -631,6 +648,13 @@ async function handleBack(phone) {
 
     case "ASK_PAYMENT_METHOD":
       return sendPaymentQuestion(phone);
+    case "ASK_CONTACT_PHONE":
+      return sendContactPhoneQuestion(phone, state);
+    case "ASK_OTHER_PHONE":
+      return sendTextAndReturn(
+        phone,
+        "Escribe el número de contacto. Ejemplo: 3001234567\n\nSi el domiciliario no encuentra la dirección, lo llamará a este número."
+      );
 
     default:
       return sendMainMenu(phone);
@@ -649,6 +673,10 @@ async function sendMainMenu(phone) {
 }
 
 async function handleMainMenuStep(phone, text, rawText, state) {
+  if (text === "nav_atras") {
+    return sendTextAndReturn(phone, "Ya estás en el menú principal 😊");
+  }
+
   if (CATEGORY_BY_ID[text] || NAVIGATION_TARGETS[text]) {
     return handleCategorySelectedStep(phone, text, state);
   }
@@ -768,8 +796,14 @@ async function sendCarta(phone, state) {
 }
 
 async function handleCategorySelectedStep(phone, text, state) {
+  if (text === "nav_atras") {
+    return handleListBack(phone, state);
+  }
+
   const category = CATEGORY_BY_ID[text];
   if (category) {
+    state.navigationHistory = [];
+    state.currentListId = null;
     return showProductListById(phone, state, category.primera_lista);
   }
   if (NAVIGATION_TARGETS[text]) {
@@ -785,6 +819,13 @@ async function showProductListByCategory(phone, state, category) {
 async function showProductListById(phone, state, listId) {
   const list = menuLists[listId];
   if (!list) return sendTextAndReturn(phone, "No encontré esa lista de productos 😅");
+
+  const history = state.navigationHistory || [];
+  if (state.currentListId && state.currentListId !== listId) {
+    history.push(state.currentListId);
+  }
+  state.navigationHistory = history;
+
   await sendWhatsAppList(
     phone,
     `Estos son los productos de ${list.titulo}:`,
@@ -806,10 +847,29 @@ async function showProductListById(phone, state, listId) {
 }
 
 async function handleProductSelectedStep(phone, text, state) {
+  if (text === "nav_atras") {
+    return handleListBack(phone, state);
+  }
+
   if (NAVIGATION_TARGETS[text]) {
     return showProductListById(phone, state, NAVIGATION_TARGETS[text]);
   }
   return handleProductSelection(phone, text, state);
+}
+
+async function handleListBack(phone, state) {
+  const previousList = state.navigationHistory?.pop();
+
+  if (previousList) {
+    console.log("🔙 Cliente tocó Atrás. Volviendo al paso anterior:", previousList);
+    state.currentListId = null;
+    return showProductListById(phone, state, previousList);
+  }
+
+  console.log("🔙 Cliente tocó Atrás. Volviendo al paso anterior:", "MAIN_MENU");
+  state.currentListId = null;
+  state.navigationHistory = [];
+  return sendCarta(phone, state);
 }
 
 async function handleProductSelection(phone, text, state) {
@@ -1116,12 +1176,12 @@ function handleCustomerNameStep(phone, rawText, state) {
   }
 
   state.customerName = capitalizeWords(name);
-  state.step = "ASK_PHONE";
+  state.step = "ASK_ADDRESS";
   states.set(phone, state);
 
   return sendTextAndReturn(
     phone,
-    `Gracias, ${state.customerName} 😊\n\n¿A qué número te podemos llamar cuando el domiciliario esté en camino?\n\n_Escribe *mismo* para usar este mismo WhatsApp (${phone})._\n\n_Escribe "atrás" para volver._`
+    `Gracias, ${state.customerName} 😊\n\nAhora dime la *dirección de entrega* (calle, carrera, número, torre, apto, etc.):\n\nEjemplo: Calle 10 # 20-30, Torre 2, Apto 301\n\n_Escribe "atrás" para volver._`
   );
 }
 
@@ -1182,6 +1242,59 @@ function handleNeighborhoodStep(phone, rawText, state) {
   }
 
   state.neighborhood = capitalizeWords(neighborhood);
+  state.step = "ASK_CONTACT_PHONE";
+  states.set(phone, state);
+
+  return sendContactPhoneQuestion(phone, state);
+}
+
+async function sendContactPhoneQuestion(phone, state) {
+  await sendWhatsAppButtons(
+    phone,
+    `¿A qué número te podemos llamar si el domiciliario no encuentra la dirección?\n\nUsar este WhatsApp: ${phone}\n\nSi el domiciliario no encuentra la dirección, lo llamará a este número.`,
+    [
+      { id: "tel_mismo", title: "Usar este WhatsApp" },
+      { id: "tel_otro", title: "Dar otro número" }
+    ],
+    "📞 Teléfono de contacto"
+  );
+
+  return "pregunta de teléfono de contacto enviada";
+}
+
+function handleContactPhoneStep(phone, text, state) {
+  if (text === "tel_mismo") {
+    state.contactPhone = phone;
+    console.log("📞 Teléfono de contacto guardado:", state.contactPhone);
+    state.step = "ASK_PAYMENT_METHOD";
+    states.set(phone, state);
+    return sendPaymentQuestion(phone);
+  }
+
+  if (text === "tel_otro") {
+    state.step = "ASK_OTHER_PHONE";
+    states.set(phone, state);
+    return sendTextAndReturn(
+      phone,
+      "Escribe el número de contacto. Ejemplo: 3001234567\n\nSi el domiciliario no encuentra la dirección, lo llamará a este número.\n\n_Escribe \"atrás\" para volver._"
+    );
+  }
+
+  return sendContactPhoneQuestion(phone, state);
+}
+
+function handleOtherPhoneStep(phone, rawText, state) {
+  const contactPhone = rawText.replace(/[^\d]/g, "");
+
+  if (contactPhone.length < 10) {
+    return sendTextAndReturn(
+      phone,
+      "El número debe tener al menos 10 dígitos. Ejemplo: 3001234567.\n\n_Escribe \"atrás\" para volver._"
+    );
+  }
+
+  state.contactPhone = contactPhone;
+  console.log("📞 Teléfono de contacto guardado:", state.contactPhone);
   state.step = "ASK_PAYMENT_METHOD";
   states.set(phone, state);
 
