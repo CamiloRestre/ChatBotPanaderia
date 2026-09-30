@@ -800,19 +800,32 @@ async function handleMainMenuStep(phone, text, rawText, state) {
 // CARTA COMO LISTA — Categorías → Productos
 // ---------------------------------------------------------------------------
 
-async function sendCarta(phone, state) {
+async function sendCarta(phone, state, options = {}) {
+  const showBackToCart = options.showBackToCart || state.addingProduct === true;
+  const categoryRows = menuPrincipal.map((category) => ({
+    id: category.id,
+    title: category.title,
+    description: category.description
+  }));
+
+  if (showBackToCart) {
+    categoryRows.push({
+      id: "back_to_cart",
+      title: "Volver al pedido",
+      description: "Regresar al resumen del carrito"
+    });
+  }
+
   await sendWhatsAppList(
     phone,
-    "Elige una categoría para ver los productos:",
+    showBackToCart
+      ? "¿Qué deseas agregar a tu pedido?\n\nElige una categoría:"
+      : "Elige una categoría para ver los productos:",
     "Ver categorías",
     [
       {
         title: "Categorías",
-        rows: menuPrincipal.map((category) => ({
-          id: category.id,
-          title: category.title,
-          description: category.description
-        }))
+        rows: categoryRows
       }
     ],
     "📋 Nuestra carta"
@@ -826,12 +839,20 @@ async function sendCarta(phone, state) {
 }
 
 async function handleCategorySelectedStep(phone, text, state) {
+  if (text === "back_to_cart") {
+    state.addingProduct = false;
+    state.step = "ASK_ADD_MORE";
+    states.set(phone, state);
+    return sendAddMoreButtons(phone, state);
+  }
+
   if (text === "nav_atras") {
     return handleListBack(phone, state);
   }
 
   const category = CATEGORY_BY_ID[text];
   if (category) {
+    state.addingProduct = false;
     state.navigationHistory = [];
     state.currentListId = null;
     return showProductListById(phone, state, category.primera_lista);
@@ -1127,11 +1148,12 @@ async function sendAddMoreButtons(phone, state) {
 
 async function handleAddMoreStep(phone, text, state) {
   if (text === "add_product") {
+    state.addingProduct = true;
     state.step = "CATEGORY_SELECTED";
     state.currentListId = null;
     state.navigationHistory = [];
     states.set(phone, state);
-    return sendCarta(phone, state);
+    return sendCarta(phone, state, { showBackToCart: true });
   }
 
   if (text === "finish_order") {
