@@ -23,7 +23,8 @@ const states = new Map();
 
 const BAKERY_NAME = process.env.BAKERY_NAME || "Panadería Molinos";
 const BAKERY_ADDRESS =
-  process.env.BAKERY_ADDRESS || "Calle Principal #12-34, Tuluá, Valle del Cauca";
+  process.env.BAKERY_ADDRESS ||
+  "Cra 28 A N. 11B-18, Tuluá, Valle del Cauca, Barrio San Antonio";
 const HUMAN_ATTENTION_SCHEDULE =
   process.env.HUMAN_ATTENTION_SCHEDULE || "7:00 a.m. a 7:00 p.m.";
 
@@ -699,7 +700,6 @@ async function sendMainMenu(phone) {
       title: "Opciones principales",
       rows: [
         { id: "menu_ver_carta", title: "Ver la carta", description: "Revisa todos nuestros productos" },
-        { id: "menu_hacer_pedido", title: "Hacer un pedido", description: "Agrega productos al carrito" },
         { id: "menu_recomendar", title: "Recomiéndame algo", description: "Sugerencias según tu antojo" },
         { id: "menu_horarios", title: "Horarios y ubicación", description: "Dirección y horario de atención" },
         { id: "menu_asesor", title: "Hablar con alguien", description: "Atención personalizada" }
@@ -726,15 +726,6 @@ async function handleMainMenuStep(phone, text, rawText, state) {
 
   if (text === "menu_ver_carta") {
     return sendCarta(phone, state);
-  }
-
-  if (text === "menu_hacer_pedido") {
-    state.cart = [];
-    return askProductName(
-      phone,
-      state,
-      "Claro 😊 ¿Qué te gustaría pedir? Escríbeme el nombre del producto, por ejemplo: Croissant, Torta de chocolate, Café."
-    );
   }
 
   if (text === "menu_recomendar") {
