@@ -811,8 +811,8 @@ async function sendCarta(phone, state, options = {}) {
   if (showBackToCart) {
     categoryRows.push({
       id: "back_to_cart",
-      title: "Volver al pedido",
-      description: "Regresar al resumen del carrito"
+      title: "◄ Volver a mi pedido",
+      description: "Volver al resumen del carrito"
     });
   }
 
@@ -846,6 +846,10 @@ async function handleCategorySelectedStep(phone, text, state) {
     return sendAddMoreButtons(phone, state);
   }
 
+  if (text === "ver_categorias") {
+    return sendCarta(phone, state, { showBackToCart: state.addingProduct === true });
+  }
+
   if (text === "nav_atras") {
     return handleListBack(phone, state);
   }
@@ -860,7 +864,26 @@ async function handleCategorySelectedStep(phone, text, state) {
   if (NAVIGATION_TARGETS[text]) {
     return showProductListById(phone, state, NAVIGATION_TARGETS[text]);
   }
+
+  if (state.addingProduct) {
+    return sendCategoryRecoveryButtons(phone, state);
+  }
+
   return handleProductSelection(phone, text, state);
+}
+
+async function sendCategoryRecoveryButtons(phone, state) {
+  await sendWhatsAppButtons(
+    phone,
+    "No encontré esa opción 😊\n\n¿Qué deseas hacer?",
+    [
+      { id: "ver_categorias", title: "Ver categorías" },
+      { id: "back_to_cart", title: "Volver a mi pedido" }
+    ],
+    "Agregar producto"
+  );
+
+  return "opciones de recuperación de categorías enviadas";
 }
 
 async function showProductListByCategory(phone, state, category) {
