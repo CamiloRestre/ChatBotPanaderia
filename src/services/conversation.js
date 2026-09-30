@@ -306,7 +306,9 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
     );
   }
 
-  if (messageType !== "text") {
+  // Las respuestas interactivas ya fueron convertidas por el webhook a su id
+  // (cat_*, nav_* o el id de un producto), así que siguen el flujo textual.
+  if (messageType !== "text" && messageType !== "interactive") {
     return sendNonTextResponse(phone, messageType);
   }
 
@@ -647,6 +649,14 @@ async function sendMainMenu(phone) {
 }
 
 async function handleMainMenuStep(phone, text, rawText, state) {
+  if (CATEGORY_BY_ID[text] || NAVIGATION_TARGETS[text]) {
+    return handleCategorySelectedStep(phone, text, state);
+  }
+
+  if (getProductById(text.replace(/^prod_/, ""))) {
+    return handleProductSelection(phone, text, state);
+  }
+
   if (text === "menu_ver_carta") {
     return sendCarta(phone, state);
   }

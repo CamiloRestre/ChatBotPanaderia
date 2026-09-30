@@ -74,10 +74,11 @@ function extractInboundMessage(payload) {
 
 app.post("/make", async (req, res) => {
   const payload = req.body || {};
-  console.log("📥 Webhook de Make recibido:", JSON.stringify(payload));
+  console.log("📥 Payload recibido:", JSON.stringify(req.body, null, 2));
 
   try {
     const { phone, text: messageSource, type: messageType } = extractInboundMessage(payload);
+    console.log("📥 Mensaje extraído:", messageSource);
 
     if (messageType === "text" && (!messageSource || !String(messageSource).trim())) {
       return res.status(200).json({
@@ -167,6 +168,8 @@ app.post("/webhook", async (req, res) => {
 
     const phone = message.from;
     const text = extractIncomingText(message);
+    console.log("📥 Payload recibido:", JSON.stringify(req.body, null, 2));
+    console.log("📥 Mensaje extraído:", text);
 
     if (message.type === "text" && (!text || !String(text).trim())) return;
 
