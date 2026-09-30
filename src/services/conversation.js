@@ -3,11 +3,19 @@
 
 import {
   sendWhatsAppMessage,
-  sendWhatsAppDocument,
   sendWhatsAppList,
   sendWhatsAppButtons
 } from "../config/whatsapp.js";
-import { products, formatPrice, CATEGORY_LABELS } from "../data/products.js";
+import {
+  products,
+  formatPrice,
+  CATEGORY_LABELS,
+  CATEGORY_BY_ID,
+  menuPrincipal,
+  menuLists,
+  NAVIGATION_TARGETS,
+  getProductById
+} from "../data/products.js";
 import { getAiSalesResponse } from "./ai.js";
 import { notifyMake } from "./notify.js";
 
@@ -510,8 +518,8 @@ function resendStepPrompt(phone, state) {
     case "CATEGORY_SELECTED":
       return sendCarta(phone, state);
     case "PRODUCT_LIST_SHOWN":
-      return state.currentCategory
-        ? showProductListByCategory(phone, state, state.currentCategory)
+      return state.currentListId
+        ? showProductListById(phone, state, state.currentListId)
         : sendCarta(phone, state);
     case "PRODUCT_FOUND":
       return sendTextAndReturn(phone, "Escríbeme el nombre del producto que deseas buscar, o escribe *menu* para ver las opciones.");
@@ -584,8 +592,8 @@ async function handleBack(phone) {
       return sendCarta(phone, state);
 
     case "PRODUCT_LIST_SHOWN":
-      if (state.currentCategory) {
-        return showProductListByCategory(phone, state, state.currentCategory);
+      if (state.currentListId) {
+        return showProductListById(phone, state, state.currentListId);
       }
       return sendCarta(phone, state);
 
@@ -632,26 +640,10 @@ async function handleBack(phone) {
 // ---------------------------------------------------------------------------
 
 async function sendMainMenu(phone) {
-  await sendWhatsAppList(
-    phone,
-    "Soy el asistente virtual y puedo ayudarte con lo que necesites.",
-    "Ver opciones",
-    [
-      {
-        title: "Opciones principales",
-        rows: [
-          { id: "menu_ver_carta", title: "Ver la carta", description: "Revisa todos nuestros productos" },
-          { id: "menu_hacer_pedido", title: "Hacer un pedido", description: "Agrega productos al carrito" },
-          { id: "menu_recomendar", title: "Recomiéndame algo", description: "Sugerencias según tu antojo" },
-          { id: "menu_horarios", title: "Horarios y ubicación", description: "Dirección y horario de atención" },
-          { id: "menu_asesor", title: "Hablar con alguien", description: "Atención personalizada" }
-        ]
-      }
-    ],
-    `Hola 👋 Bienvenido/a a ${BAKERY_NAME}`
-  );
-
-  return "menu principal enviado";
+  return sendCarta(phone, {
+    step: "MAIN_MENU",
+    cart: states.get(phone)?.cart || []
+  });
 }
 
 async function handleMainMenuStep(phone, text, rawText, state) {
@@ -741,17 +733,6 @@ async function handleMainMenuStep(phone, text, rawText, state) {
 // ---------------------------------------------------------------------------
 
 async function sendCarta(phone, state) {
-  const mediaId = process.env.CATALOG_MEDIA_ID || "";
-  const filename = process.env.CATALOG_FILE_NAME || `Carta ${BAKERY_NAME}.pdf`;
-
-  if (mediaId) {
-    await sendWhatsAppDocument(phone, mediaId, filename, "Aquí tienes nuestra carta actualizada 😊");
-    state.step = "PRODUCT_FOUND";
-    state.waitingForProductName = true;
-    states.set(phone, state);
-    return sendTextAndReturn(phone, "Cuando veas algo que te guste, escríbeme el nombre para agregarlo a tu pedido 😊");
-  }
-
   await sendWhatsAppList(
     phone,
     "Elige una categoría para ver los productos:",
@@ -759,10 +740,10 @@ async function sendCarta(phone, state) {
     [
       {
         title: "Categorías",
-        rows: Object.keys(CATEGORY_LABELS).map((cat) => ({
-          id: `cat_${cat}`,
-          title: CATEGORY_LABELS[cat],
-          description: `Ver productos de ${CATEGORY_LABELS[cat]}`
+        rows: menuPrincipal.map((category) => ({
+          id: category.id,
+          title: category.title,
+          description: category.description
         }))
       }
     ],
@@ -777,50 +758,52 @@ async function sendCarta(phone, state) {
 }
 
 async function handleCategorySelectedStep(phone, text, state) {
-  const category = text.replace("cat_", "");
-
-  if (!CATEGORY_LABELS[category]) {
-    return sendTextAndReturn(phone, "Categoría no válida. Escribe *menu* para empezar de nuevo.");
+  const category = CATEGORY_BY_ID[text];
+  if (category) {
+    return showProductListById(phone, state, category.primera_lista);
   }
-
-  return showProductListByCategory(phone, state, category);
+  if (NAVIGATION_TARGETS[text]) {
+    return showProductListById(phone, state, NAVIGATION_TARGETS[text]);
+  }
+  return handleProductSelection(phone, text, state);
 }
 
 async function showProductListByCategory(phone, state, category) {
-  const categoryProducts = products.filter((p) => p.available && p.category === category);
+  return showProductListById(phone, state, CATEGORY_BY_ID[category]?.primera_lista);
+}
 
-  if (categoryProducts.length === 0) {
-    return sendTextAndReturn(phone, "No hay productos disponibles en esta categoría por ahora 😅");
-  }
-
+async function showProductListById(phone, state, listId) {
+  const list = menuLists[listId];
+  if (!list) return sendTextAndReturn(phone, "No encontré esa lista de productos 😅");
   await sendWhatsAppList(
     phone,
-    `Estos son los productos de ${CATEGORY_LABELS[category]}:`,
+    `Estos son los productos de ${list.titulo}:`,
     "Ver productos",
     [
       {
-        title: CATEGORY_LABELS[category],
-        rows: categoryProducts.slice(0, 10).map((product) => ({
-          id: `prod_${product.id}`,
-          title: product.name.slice(0, 24),
-          description: formatPrice(product.price)
-        }))
+        title: list.titulo,
+        rows: list.filas
       }
     ],
     "📋 Productos disponibles"
   );
 
   state.step = "PRODUCT_LIST_SHOWN";
-  state.currentCategory = category;
+  state.currentListId = listId;
   states.set(phone, state);
 
   return "lista de productos enviada";
 }
 
 async function handleProductSelectedStep(phone, text, state) {
-  const productId = Number(text.replace("prod_", ""));
-  const product = products.find((p) => p.id === productId);
+  if (NAVIGATION_TARGETS[text]) {
+    return showProductListById(phone, state, NAVIGATION_TARGETS[text]);
+  }
+  return handleProductSelection(phone, text, state);
+}
 
+async function handleProductSelection(phone, text, state) {
+  const product = getProductById(text.replace(/^prod_/, ""));
   if (!product) {
     return sendTextAndReturn(phone, "No encontré ese producto 😅 Escribe *menu* para empezar de nuevo.");
   }
@@ -921,13 +904,13 @@ async function handleProductFoundStep(phone, text, state) {
     return sendProductSearchResults(phone, foundProducts);
   }
 
-  const selectedIndex = Number(text);
+  const selectedProduct = text.startsWith("prod_")
+    ? state.foundProducts.find((product) => product.id === text.replace("prod_", ""))
+    : state.foundProducts[Number(text) - 1];
 
-  if (!Number.isInteger(selectedIndex) || selectedIndex < 1 || selectedIndex > state.foundProducts.length) {
-    return sendTextAndReturn(phone, "Por favor responde con el número del producto que quieres agregar 😊");
+  if (!selectedProduct) {
+    return sendTextAndReturn(phone, "Por favor elige una presentación de la lista 😊");
   }
-
-  const selectedProduct = state.foundProducts[selectedIndex - 1];
 
   state.selectedProduct = selectedProduct;
   state.step = "ASK_QUANTITY";
@@ -939,15 +922,22 @@ async function handleProductFoundStep(phone, text, state) {
   );
 }
 
-function sendProductSearchResults(phone, foundProducts) {
-  const productList = foundProducts
-    .map((product, index) => `${index + 1}. ${product.name} — ${formatPrice(product.price)}\n${product.description}`)
-    .join("\n\n");
-
-  return sendTextAndReturn(
+async function sendProductSearchResults(phone, foundProducts) {
+  await sendWhatsAppList(
     phone,
-    `Encontré estas opciones:\n\n${productList}\n\n¿Cuál te gustaría agregar a tu pedido?\n\nResponde con el número de la opción 😊`
+    "Encontré estas opciones. Elige la presentación que deseas:",
+    "Elegir producto",
+    [{
+      title: "Productos",
+      rows: foundProducts.slice(0, 10).map((product) => ({
+        id: `prod_${product.id}`,
+        title: product.name,
+        description: `${formatPrice(product.price)} · ${product.description}`
+      }))
+    }],
+    "Presentaciones"
   );
+  return "lista de coincidencias enviada";
 }
 
 // ---------------------------------------------------------------------------
@@ -1383,10 +1373,10 @@ function getRecommendations(state) {
 }
 
 function parseRecoCategory(text) {
-  if (text === "1" || text.includes("pan")) return "pan";
-  if (text === "2" || text.includes("pastel") || text.includes("torta")) return "pastel";
-  if (text === "3" || text.includes("postre")) return "postre";
-  if (text === "4" || text.includes("bebida")) return "bebida";
+  if (text === "1" || text.includes("pan")) return "cat_panaderia_tradicional";
+  if (text === "2" || text.includes("pastel") || text.includes("torta")) return "cat_tortas";
+  if (text === "3" || text.includes("postre")) return "cat_postres";
+  if (text === "4" || text.includes("bebida")) return "cat_maltas_bebidas";
   if (text === "5" || text.includes("sorprend")) return "sorpresa";
   return null;
 }
@@ -1461,12 +1451,25 @@ function searchProducts(text) {
       if (!product.available) return false;
 
       const searchableText = normalize(
-        [product.name, product.category, ...product.tags, ...product.keywords].join(" ")
+        [
+          product.name,
+          CATEGORY_LABELS[product.category],
+          product.category,
+          ...product.tags,
+          ...product.keywords
+        ].join(" ")
       );
 
-      return searchableText.includes(normalizedText) || normalizedText.includes(normalize(product.name));
+      if (searchableText.includes(normalizedText) || normalizedText.includes(normalize(product.name))) {
+        return true;
+      }
+
+      return searchableText
+        .split(/\s+/)
+        .filter((word) => word.length > 2)
+        .some((word) => isSimilar(normalizedText, word, 0.72));
     })
-    .slice(0, 3);
+    .slice(0, 10);
 }
 
 function isMainMenuRequest(text) {
