@@ -1403,9 +1403,13 @@ function buildCartSummary(state) {
     })
     .join("\n");
 
+  if (!state.deliveryMethod) {
+    return `🛒 Tu pedido:\n\n${cartLines}\n\nSubtotal: ${formatPrice(state.subtotal)}`;
+  }
+
   const deliveryLine = state.deliveryMethod === "domicilio"
     ? `Domicilio: ${formatPrice(state.deliveryCost)}`
-    : "Domicilio: $0 (recoger en panadería)";
+    : "Entrega: Recoger en la panadería";
 
   return `🛒 Tu pedido:\n\n${cartLines}\n\nSubtotal: ${formatPrice(state.subtotal)}\n${deliveryLine}\nTotal: ${formatPrice(state.totalPrice)}`;
 }
