@@ -1,9 +1,47 @@
-node_modules/
+# Variables de entorno y secretos locales
 .env
-npm-debug.log
+.env.*
+!.env.example
+
+# Dependencias y archivos generados
+node_modules/
+.next/
+dist/
+build/
+coverage/
+.cache/
+.parcel-cache/
+.temp/
+tmp/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Archivos del sistema y del editor
 .DS_Store
-*.log.env
+Thumbs.db
+.AppleDouble
+.LSOverride
+Desktop.ini
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Archivos temporales y de respaldo
+*.tmp
+*.temp
 *.bak
-test-payloads/
-payload-*.json
-test-*.ps1
+*.old
+*.orig
+
+# Variables locales de herramientas
+.eslintcache
+.stylelintcache
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local

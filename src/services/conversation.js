@@ -16,6 +16,8 @@ import {
   NAVIGATION_TARGETS,
   getProductById
 } from "../data/products.js";
+import { getZonaByBarrio, getZonaByDistancia } from "../data/domicilio.js";
+import { calcularDistancia, geocodificarDireccion, PANADERIA_ADDRESS } from "../config/googleMaps.js";
 import { getAiSalesResponse } from "./ai.js";
 import { notifyMake } from "./notify.js";
 
@@ -110,6 +112,7 @@ const ADVANCED_FLOW_STEPS = new Set([
   "CATEGORY_SELECTED", "PRODUCT_LIST_SHOWN", "PRODUCT_FOUND", "ASK_QUANTITY", "ASK_NOTE",
   "ASK_NOTE_TEXT", "ASK_ADD_MORE", "ASK_CUSTOMER_NAME", "ASK_PHONE", "ASK_ADDRESS",
   "ASK_DELIVERY_METHOD", "ASK_NEIGHBORHOOD", "ASK_CONTACT_PHONE", "ASK_OTHER_PHONE",
+  "OUT_OF_COVERAGE",
   "ASK_PAYMENT_METHOD",
   "ASK_RECO_CATEGORY", "ASK_RECO_MOOD",
   "SHOW_RECOMMENDATIONS", "ASK_LEAD_NAME", "ASK_LEAD_NEED"
@@ -295,6 +298,7 @@ const STEPS_HISTORY = {
   ASK_DELIVERY_METHOD: "ASK_CUSTOMER_NAME",
   ASK_ADDRESS: "ASK_DELIVERY_METHOD",
   ASK_NEIGHBORHOOD: "ASK_ADDRESS",
+  OUT_OF_COVERAGE: "ASK_NEIGHBORHOOD",
   ASK_CONTACT_PHONE: "ASK_NEIGHBORHOOD",
   ASK_OTHER_PHONE: "ASK_CONTACT_PHONE",
   ASK_PAYMENT_METHOD: "ASK_CONTACT_PHONE",
@@ -481,6 +485,9 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
 
     case "ASK_NEIGHBORHOOD":
       return handleNeighborhoodStep(phone, rawText, state);
+
+    case "OUT_OF_COVERAGE":
+      return handleOutOfCoverageStep(phone, text, state);
 
     case "ASK_CONTACT_PHONE":
       return handleContactPhoneStep(phone, text, state);
@@ -721,6 +728,8 @@ function resendStepPrompt(phone, state) {
       return sendTextAndReturn(phone, "¿Cuál es la dirección de entrega?");
     case "ASK_NEIGHBORHOOD":
       return sendTextAndReturn(phone, "¿En qué barrio queda?");
+    case "OUT_OF_COVERAGE":
+      return sendOutOfCoverageQuestion(phone);
     case "ASK_PAYMENT_METHOD":
       return sendPaymentQuestion(phone);
     case "ASK_CONTACT_PHONE":
@@ -1377,7 +1386,11 @@ function calculateCartTotals(state) {
   });
 
   state.totalUnits = totalUnits;
-  state.totalPrice = totalPrice;
+  state.subtotal = totalPrice;
+  state.deliveryCost = state.deliveryMethod === "domicilio"
+    ? Number(state.deliveryCost || 0)
+    : 0;
+  state.totalPrice = totalPrice + state.deliveryCost;
 }
 
 function buildCartSummary(state) {
@@ -1390,7 +1403,11 @@ function buildCartSummary(state) {
     })
     .join("\n");
 
-  return `🛒 Tu pedido:\n\n${cartLines}\n\nTotal: ${formatPrice(state.totalPrice)}`;
+  const deliveryLine = state.deliveryMethod === "domicilio"
+    ? `Domicilio: ${formatPrice(state.deliveryCost)}`
+    : "Domicilio: $0 (recoger en panadería)";
+
+  return `🛒 Tu pedido:\n\n${cartLines}\n\nSubtotal: ${formatPrice(state.subtotal)}\n${deliveryLine}\nTotal: ${formatPrice(state.totalPrice)}`;
 }
 
 // ---------------------------------------------------------------------------
@@ -1427,6 +1444,8 @@ async function sendDeliveryMethodQuestion(phone) {
 function handleDeliveryMethodStep(phone, text, state) {
   if (text === "delivery_pickup") {
     state.deliveryMethod = "recoger";
+    state.deliveryCost = 0;
+    delete state.zona;
     state.step = "ASK_PAYMENT_METHOD";
     states.set(phone, state);
     return sendPaymentQuestion(phone);
@@ -1434,6 +1453,7 @@ function handleDeliveryMethodStep(phone, text, state) {
 
   if (text === "delivery_home") {
     state.deliveryMethod = "domicilio";
+    state.deliveryCost = 0;
     state.step = "ASK_ADDRESS";
     states.set(phone, state);
     return sendTextAndReturn(
@@ -1491,7 +1511,7 @@ function handleAddressStep(phone, rawText, state) {
   );
 }
 
-function handleNeighborhoodStep(phone, rawText, state) {
+async function handleNeighborhoodStep(phone, rawText, state) {
   const neighborhood = rawText.trim();
 
   if (neighborhood.length < 2 || isInvalidText(neighborhood)) {
@@ -1502,10 +1522,66 @@ function handleNeighborhoodStep(phone, rawText, state) {
   }
 
   state.neighborhood = capitalizeWords(neighborhood);
+
+  const barrioZone = getZonaByBarrio(neighborhood);
+  if (barrioZone) {
+    state.zona = barrioZone.zona;
+    state.deliveryCost = barrioZone.precio;
+  } else {
+    const coordinates = await geocodificarDireccion(state.address);
+    const distanceMeters = coordinates
+      ? await calcularDistancia(PANADERIA_ADDRESS, coordinates)
+      : null;
+    const distanceZone = distanceMeters === null
+      ? null
+      : getZonaByDistancia(distanceMeters);
+
+    if (!distanceZone) {
+      state.step = "OUT_OF_COVERAGE";
+      states.set(phone, state);
+      return sendOutOfCoverageQuestion(phone);
+    }
+
+    state.zona = distanceZone.zona;
+    state.deliveryCost = distanceZone.precio;
+    state.deliveryDistanceMeters = distanceMeters;
+  }
+
   state.step = "ASK_CONTACT_PHONE";
   states.set(phone, state);
 
   return sendContactPhoneQuestion(phone, state);
+}
+
+async function sendOutOfCoverageQuestion(phone) {
+  await sendWhatsAppButtons(
+    phone,
+    "Lo sentimos 😔 Por ahora no tenemos cobertura de domicilio en tu zona. Solo hacemos domicilios dentro del casco urbano de Tuluá (hasta 4 km).\n\n¿Qué deseas hacer?",
+    [
+      { id: "delivery_pickup", title: "Recoger en panadería" },
+      { id: "cancel_order", title: "Cancelar pedido" }
+    ],
+    "Fuera de cobertura"
+  );
+  return "opciones de cobertura enviadas";
+}
+
+function handleOutOfCoverageStep(phone, text, state) {
+  if (text === "delivery_pickup") {
+    state.deliveryMethod = "recoger";
+    state.deliveryCost = 0;
+    delete state.zona;
+    state.step = "ASK_PAYMENT_METHOD";
+    states.set(phone, state);
+    return sendPaymentQuestion(phone);
+  }
+
+  if (text === "cancel_order") {
+    getFreshState(phone);
+    return sendMainMenu(phone);
+  }
+
+  return sendOutOfCoverageQuestion(phone);
 }
 
 async function sendContactPhoneQuestion(phone, state) {
@@ -1608,6 +1684,8 @@ async function handlePaymentMethodStep(phone, text, state) {
     contactPhone: state.contactPhone,
     address: state.address,
     neighborhood: state.neighborhood,
+    deliveryCost: state.deliveryCost,
+    subtotal: state.subtotal,
     paymentMethod: state.paymentMethod,
     items: state.cart.map((item) => ({
       name: item.product.name,
@@ -1630,7 +1708,7 @@ async function handlePaymentMethodStep(phone, text, state) {
 
   return sendTextAndReturn(
     phone,
-    `Listo, ${state.customerName} ✅ Tu pedido quedó registrado:\n\n${buildCartSummary(state)}\n\n📋 *Datos de entrega*\n👤 Nombre: ${state.customerName}\n📞 Llamar al: ${state.contactPhone}\n🏠 Dirección: ${state.address}\n📍 Barrio: ${state.neighborhood}\n\n${paymentLine}\n\nGracias por preferir a ${BAKERY_NAME} 🥐`
+    `Listo, ${state.customerName} ✅ Tu pedido quedó registrado:\n\n${buildCartSummary(state)}\n\n📋 *Datos de entrega*\n👤 Nombre: ${state.customerName}\n${state.deliveryMethod === "domicilio" ? `📞 Llamar al: ${state.contactPhone}\n🏠 Dirección: ${state.address}\n📍 Barrio: ${state.neighborhood}\n` : "🚶 Entrega: Recoger en la panadería\n"}\n\n${paymentLine}\n\nGracias por preferir a ${BAKERY_NAME} 🥐`
   );
 }
 
