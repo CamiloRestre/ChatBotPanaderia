@@ -219,15 +219,181 @@ app.post("/render", (req, res) => {
 
 app.get("/privacidad", (req, res) => {
   res.type("html").send(`
-    <h1>Política de Privacidad — Bot Panadería Molinos</h1>
-    <p>Este chatbot de WhatsApp usa la información que nos compartes
-    (nombre, número de teléfono, dirección y detalles del pedido)
-    únicamente para gestionar tu pedido y comunicarnos contigo.</p>
-    <p>No compartimos tus datos con terceros distintos a los necesarios
-    para procesar el pedido. No usamos tu información con fines publicitarios.</p>
-    <p>Puedes solicitar la eliminación de tus datos escribiéndonos
-    directamente por este mismo chat.</p>
-    <p>Contacto: camiloproyectos14@gmail.com</p>
+    <!doctype html>
+    <html lang="es">
+      <head>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Política de Tratamiento de Datos Personales | Panadería Molinos</title>
+        <style>
+          :root {
+            color-scheme: light;
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #2b2118;
+            background: #fffaf3;
+          }
+          body { margin: 0; }
+          main { max-width: 860px; margin: 0 auto; padding: 32px 20px 48px; }
+          h1, h2 { color: #6b3f1d; }
+          h1 { line-height: 1.2; }
+          .notice {
+            padding: 14px 16px;
+            border-left: 4px solid #c8862f;
+            background: #fff0d5;
+          }
+          .updated { color: #695f56; font-size: .95rem; }
+        </style>
+      </head>
+      <body>
+        <main>
+          <h1>Política de Tratamiento de Datos Personales</h1>
+          <p><strong>Panadería Molinos</strong></p>
+          <p class="updated">Versión provisional: 1.0 · Fecha de vigencia: 8 de octubre de 2026</p>
+
+          <p class="notice">
+            Esta política es una versión provisional para informar el tratamiento
+            de datos personales asociado al chatbot de WhatsApp de Panadería Molinos.
+            Debe completarse con los datos legales del responsable y revisarse antes
+            de su publicación definitiva.
+          </p>
+
+          <h2>1. Responsable del tratamiento</h2>
+          <p>
+            El responsable del tratamiento es
+            <strong>[RAZÓN SOCIAL O NOMBRE COMPLETO DEL RESPONSABLE]</strong>,
+            que opera comercialmente bajo el nombre Panadería Molinos.
+          </p>
+          <p>
+            NIT o documento, si aplica:
+            <strong>[NIT O DOCUMENTO]</strong><br>
+            Correo para solicitudes de datos personales:
+            <strong>[CORREO OFICIAL DE PROTECCIÓN DE DATOS]</strong><br>
+            Teléfono o canal adicional:
+            <strong>[TELÉFONO O CANAL OFICIAL, SI APLICA]</strong><br>
+            Ciudad: Tuluá, Valle del Cauca, Colombia.
+          </p>
+
+          <h2>2. Marco aplicable</h2>
+          <p>
+            El tratamiento se realizará conforme a la Ley 1581 de 2012,
+            el Decreto 1074 de 2015 y las demás normas colombianas aplicables
+            sobre protección de datos personales, habeas data y privacidad.
+          </p>
+
+          <h2>3. Datos que podemos tratar</h2>
+          <p>
+            Cuando una persona interactúa con el chatbot o realiza un pedido,
+            podemos tratar los datos que entregue voluntariamente y los necesarios
+            para atender la solicitud, entre ellos:
+          </p>
+          <ul>
+            <li>Nombre.</li>
+            <li>Número de teléfono o identificador de WhatsApp.</li>
+            <li>Dirección, barrio y referencias necesarias para la entrega.</li>
+            <li>Productos, cantidades, valor y estado del pedido.</li>
+            <li>Método de pago y datos necesarios para confirmar la operación.</li>
+            <li>Contenido de las solicitudes, preguntas, reclamos o novedades.</li>
+          </ul>
+          <p>
+            No solicitamos datos sensibles para gestionar pedidos. Por favor,
+            evita enviar por el chat información sensible que no sea necesaria
+            para la solicitud.
+          </p>
+
+          <h2>4. Finalidades</h2>
+          <ul>
+            <li>Recibir, confirmar y gestionar pedidos.</li>
+            <li>Coordinar domicilios o la recogida de productos.</li>
+            <li>Contactar al cliente sobre el pedido o una novedad relacionada.</li>
+            <li>Responder preguntas y solicitudes de atención personalizada.</li>
+            <li>Gestionar reclamos, consultas y solicitudes de los titulares.</li>
+            <li>Cumplir obligaciones legales y atender requerimientos de autoridad competente.</li>
+          </ul>
+          <p>
+            No utilizaremos los datos para publicidad o promociones no relacionadas
+            con el pedido sin la autorización que corresponda.
+          </p>
+
+          <h2>5. Autorización</h2>
+          <p>
+            Antes de solicitar datos necesarios para continuar con un pedido,
+            podremos pedir una autorización previa, expresa e informada mediante
+            WhatsApp. La persona puede negarse; sin embargo, si no proporciona
+            los datos estrictamente necesarios, es posible que no podamos gestionar
+            el pedido o coordinar su entrega.
+          </p>
+
+          <h2>6. Proveedores y encargados</h2>
+          <p>
+            Para operar el servicio podemos utilizar proveedores tecnológicos
+            necesarios para recibir mensajes, procesar solicitudes, alojar el
+            servidor y enviar notificaciones. Actualmente el flujo puede involucrar
+            WhatsApp Cloud API de Meta, Make y Render. Estos proveedores tratarán
+            información según sus propias condiciones y según las funciones
+            técnicas contratadas o configuradas.
+          </p>
+          <p>
+            No compartiremos datos personales con terceros para fines propios de
+            publicidad. Solo se comunicarán los datos necesarios para las
+            finalidades informadas o para cumplir una obligación legal.
+          </p>
+
+          <h2>7. Derechos del titular</h2>
+          <p>El titular puede:</p>
+          <ul>
+            <li>Conocer los datos personales tratados.</li>
+            <li>Solicitar la actualización o rectificación de información inexacta.</li>
+            <li>Solicitar prueba de la autorización, cuando corresponda.</li>
+            <li>Solicitar información sobre el uso de sus datos.</li>
+            <li>Presentar quejas ante la Superintendencia de Industria y Comercio.</li>
+            <li>Solicitar la supresión o revocar la autorización cuando sea procedente.</li>
+          </ul>
+
+          <h2>8. Consultas, reclamos y solicitudes</h2>
+          <p>
+            Las solicitudes deben enviarse al canal oficial:
+            <strong>[CORREO OFICIAL DE PROTECCIÓN DE DATOS]</strong>.
+            Deben indicar el nombre del titular, un medio de contacto, la
+            descripción de la solicitud y los datos necesarios para identificarla.
+          </p>
+          <p>
+            Las consultas y reclamos se atenderán dentro de los términos previstos
+            por la normativa colombiana aplicable. Si el canal o los datos del
+            responsable cambian, esta política será actualizada.
+          </p>
+
+          <h2>9. Conservación y seguridad</h2>
+          <p>
+            Conservaremos la información durante el tiempo necesario para cumplir
+            las finalidades informadas, gestionar obligaciones legales y resolver
+            posibles reclamaciones. Después se eliminará, anonimizará o conservará
+            únicamente cuando exista una obligación o razón legal para hacerlo.
+          </p>
+          <p>
+            Aplicamos medidas razonables de control de acceso, protección de
+            credenciales, validación de solicitudes y reducción de datos en logs.
+            Ninguna medida tecnológica garantiza seguridad absoluta.
+          </p>
+
+          <h2>10. Cambios a esta política</h2>
+          <p>
+            Cualquier cambio relevante será publicado en esta página indicando la
+            nueva versión y la fecha de actualización.
+          </p>
+
+          <h2>11. Contacto</h2>
+          <p>
+            Para asuntos relacionados con esta política, utiliza:
+            <strong>[CORREO OFICIAL DE PROTECCIÓN DE DATOS]</strong>.
+          </p>
+
+          <p class="updated">
+            Fecha de actualización: [FECHA DE ACTUALIZACIÓN DEFINITIVA]
+          </p>
+        </main>
+      </body>
+    </html>
   `);
 });
 
