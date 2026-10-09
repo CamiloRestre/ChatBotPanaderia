@@ -1,6 +1,8 @@
 # Archivos de prueba y payloads
 payloads/
 payloads/*
+payload*.json
+payload*.txt
 *.payload.json
 *.payload.txt
 test/
@@ -21,6 +23,7 @@ git-logs/
 # Node modules y entorno
 node_modules/
 .env
+.env.example
 .env.local
 .env.*.local
 
@@ -52,7 +55,6 @@ Desktop.ini
 *~
 
 # Variables locales de herramientas
-!.env.example
 .eslintcache
 .stylelintcache
 *.old
