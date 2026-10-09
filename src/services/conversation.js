@@ -57,6 +57,8 @@ const BACK_COMMANDS = [
   "back", "anterior", "previo", "before", "regresar atras", "volver atras", "vover", "bolver"
 ];
 
+const HUMAN_ATTENTION_FINISHED_COMMAND = "finalizado";
+
 const YES_WORDS = [
   "si", "sí", "s", "yes", "yep", "yap", "sep", "sipi", "claro", "claroo",
   "ok", "okey", "okay", "okis", "dale", "listo", "afirmativo", "correcto",
@@ -329,6 +331,23 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
     return;
   }
 
+  const state = states.get(phone);
+
+  if (state?.step === "WAITING_HUMAN") {
+    if (messageType === "text" && text === HUMAN_ATTENTION_FINISHED_COMMAND) {
+      const dataConsent = state.dataConsent === true ? { dataConsent: true } : {};
+      getFreshState(phone, dataConsent);
+      return sendTextAndReturn(
+        phone,
+        "Atención finalizada ✅ Retomo el servicio automático. Escribe *menu* para ver las opciones."
+      );
+    }
+
+    // La atención queda en manos del equipo hasta recibir FINALIZADO.
+    console.log("Mensaje recibido mientras la atención está en espera manual.");
+    return;
+  }
+
   if (!text && messageType === "text") {
     return sendTextAndReturn(
       phone,
@@ -341,8 +360,6 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
   if (messageType !== "text" && messageType !== "interactive") {
     return sendNonTextResponse(phone, messageType);
   }
-
-  const state = states.get(phone);
 
   if (state?.step === "AWAITING_DATA_CONSENT") {
     return handleDataConsentStep(phone, text, state);
@@ -532,8 +549,7 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
     case "ASK_LEAD_NEED":
       return handleLeadNeedStep(phone, rawText, state);
 
-    case "ORDER_CONFIRMED":
-    case "LEAD_REGISTERED": {
+    case "ORDER_CONFIRMED": {
       getFreshState(phone);
       return sendTextAndReturn(
         phone,
@@ -1965,7 +1981,7 @@ function handleHumanHandoff(phone) {
 
   return sendTextAndReturn(
     phone,
-    `Claro 😊 Puedo dejar tu solicitud registrada para que alguien del equipo te escriba.\n\nNuestro horario de atención es de ${HUMAN_ATTENTION_SCHEDULE}.\n\n¿Me regalas tu nombre, por favor?`
+    `Claro 😊 Puedo dejar tu solicitud registrada para que una persona del equipo te atienda por teléfono.\n\nNuestro horario de atención es de ${HUMAN_ATTENTION_SCHEDULE}.\n\n¿Me regalas tu nombre, por favor?`
   );
 }
 
@@ -1985,7 +2001,7 @@ function handleLeadNameStep(phone, rawText, state) {
 
 async function handleLeadNeedStep(phone, rawText, state) {
   state.need = rawText.trim();
-  state.step = "LEAD_REGISTERED";
+  state.step = "WAITING_HUMAN";
   states.set(phone, state);
 
   const leadPayload = {
@@ -2000,7 +2016,7 @@ async function handleLeadNeedStep(phone, rawText, state) {
 
   return sendTextAndReturn(
     phone,
-    `Gracias, ${state.customerName} ✅ Dejamos tu solicitud registrada:\n\n${state.need}\n\nAlguien del equipo revisará este chat en horario de atención. Gracias por escribirnos 😊`
+    `Gracias, ${state.customerName} ✅ Dejamos tu solicitud registrada:\n\n${state.need}\n\nUna persona del equipo continuará la atención por teléfono en horario de ${HUMAN_ATTENTION_SCHEDULE}. El bot queda en espera para no interrumpir la atención manual.`
   );
 }
 
