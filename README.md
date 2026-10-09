@@ -1,124 +1,209 @@
-# Bot de WhatsApp — Panadería
+# Bot de WhatsApp para Panadería Molinos
 
-Chatbot de WhatsApp con una base de conocimientos propia (menú, horarios,
-flujo de pedido) y un respaldo de IA (Gemini) para preguntas libres.
+Bot personal de WhatsApp para atender clientes de la panadería: muestra el
+menú, responde preguntas frecuentes, guía el pedido a domicilio y puede usar
+Gemini como respaldo para preguntas libres.
 
-## 1. Estructura del proyecto
+El bot usa la API oficial de **WhatsApp Cloud API** y está preparado para
+ejecutarse en Render.
 
-```
-panaderia-bot/
-├── package.json        → dependencias del proyecto
-├── .env.example        → plantilla de variables de entorno
+## Qué hace
+
+- Responde mensajes recibidos por el webhook de WhatsApp.
+- Muestra productos, precios, horarios y medios de pago.
+- Guía al cliente durante el pedido.
+- Valida barrios y datos de domicilio.
+- Puede enviar pedidos o solicitudes de atención humana a Make.
+- Usa Gemini de forma opcional cuando el flujo normal no encuentra una
+  respuesta.
+- Expone endpoints de salud y privacidad para el despliegue.
+
+## Estructura
+
+```text
+.
+├── package.json
+├── package-lock.json
 ├── .gitignore
-├── server.js            → arranca el servidor y recibe los mensajes de Meta
-├── whatsapp.js          → envía mensajes usando la API de Meta
-├── notify.js            → (opcional) avisa a Make cuando hay un pedido
-├── conversation.js       → EL FLUJO DEL BOT (base de conocimientos de conversación)
-└── products.js           → EL MENÚ / CATÁLOGO (base de conocimientos de productos)
+├── README.md
+├── scripts/
+│   └── validate-menu.js
+├── services/
+└── src/
+    ├── server.js                 # Servidor Express y endpoints
+    ├── config/
+    │   ├── googleMaps.js         # Configuración de Google Maps
+    │   └── whatsapp.js           # Envío de mensajes a WhatsApp
+    ├── data/
+    │   ├── domicilio.js          # Barrios y reglas de domicilio
+    │   ├── menu_whatsapp_molinos.json
+    │   └── products.js            # Productos y precios
+    └── services/
+        ├── ai.js                 # Respaldo opcional con Gemini
+        ├── conversation.js        # Flujo principal de conversación
+        └── notify.js             # Notificaciones opcionales a Make
 ```
 
-`ai.js` no se incluyó en esta lista porque ya lo tenías: solo se le cambiaron
-el catálogo y el mensaje de sistema para que hable como panadería.
+Los archivos `payload-*.json`, scripts de prueba y `.env` son archivos locales
+de trabajo y no forman parte del código que se despliega.
 
-## 2. Instalar y probar en tu computador
+## Requisitos
 
-1. Copia toda esta carpeta a tu proyecto en Visual Studio Code.
-2. Abre una terminal dentro de la carpeta y corre:
-   ```
-   npm install
-   ```
-3. Copia `.env.example` como `.env` y rellena los datos (ver punto 3 y 4).
-4. Corre el bot:
-   ```
-   npm start
-   ```
-   Verás en la terminal: `🥐 Bot de la panadería escuchando en el puerto 3000`.
+- Node.js 18 o superior.
+- Una aplicación de Meta con WhatsApp Cloud API para recibir mensajes reales.
+- Una cuenta de Render si se quiere publicar el bot.
+- Gemini y Google Maps son opcionales.
 
-Por sí solo, tu computador no es visible desde internet, así que Meta no
-podrá mandarle mensajes todavía — para eso lo vas a desplegar en Render
-(punto 5). Puedes probar la lógica localmente llamando a
-`handleIncomingMessage("573000000000", "hola")` desde un pequeño script si
-quieres, pero lo normal es probar ya desplegado.
+## Instalación local
 
-## 3. Dónde va la API key de Gemini (gratis)
+```bash
+git clone https://github.com/CamiloRestre/ChatBotPanaderia.git
+cd ChatBotPanaderia
+npm install
+npm start
+```
 
-1. Entra a **https://aistudio.google.com/app/apikey** con tu cuenta de Google.
-2. Crea una API key gratuita.
-3. Pégala en tu archivo `.env`, en la línea:
-   ```
-   GEMINI_API_KEY=tu_clave_aqui
-   ```
-   El código nunca tiene la clave escrita directamente — siempre se lee desde
-   esta variable de entorno (`ai.js` la usa con `process.env.GEMINI_API_KEY`).
+El servidor usa el puerto `3000` por defecto. Para cambiarlo:
 
-Si dejas esa variable vacía, el bot sigue funcionando: simplemente nunca usa
-IA y siempre se queda en el flujo de menú/carta/pedido.
+```bash
+PORT=8080 npm start
+```
 
-## 4. Dónde va la cuenta y el código de Meta (WhatsApp)
+En Windows PowerShell:
 
-1. Entra a **https://developers.facebook.com/** y crea una app de tipo
-   "Business".
-2. Agrégale el producto **WhatsApp**. Meta te da automáticamente un número
-   de pruebas.
-3. En la sección **API Setup** de WhatsApp vas a encontrar dos datos clave:
-   - **Temporary access token** → va en `WHATSAPP_TOKEN`
-   - **Phone number ID** → va en `WHATSAPP_PHONE_NUMBER_ID`
-   (El token temporal dura 24 horas; cuando pases a producción real generas
-   uno permanente en la misma sección, con un usuario del sistema).
-4. En **Configuration → Webhook**, Meta te pide dos cosas:
-   - **Callback URL**: la URL de tu servidor en Render + `/webhook`,
-     por ejemplo `https://panaderia-bot.onrender.com/webhook`.
-   - **Verify token**: cualquier palabra que tú inventes. Debe ser
-     EXACTAMENTE la misma que pongas en `.env` como `WHATSAPP_VERIFY_TOKEN`.
-   Meta llama automáticamente a `GET /webhook` (ya está implementado en
-   `server.js`) para comprobar que coincide, antes de dejarte guardar.
-5. Suscríbete al campo **messages** del webhook — así es como te llegan los
-   mensajes de los clientes a `POST /webhook`.
+```powershell
+$env:PORT = "8080"
+npm start
+```
 
-Toda la lógica que recibe y responde esos mensajes ya está en `server.js` y
-`whatsapp.js` — no tienes que escribir nada de eso, solo poner tus
-credenciales en `.env`.
+## Variables de entorno
 
-## 5. Desplegar en Render (gratis)
+Crea un archivo `.env` en la raíz del proyecto. No lo subas a GitHub.
 
-1. Sube esta carpeta a un repositorio de GitHub.
-2. En **https://render.com**, crea un **New → Web Service** y conecta ese
-   repositorio.
+```dotenv
+PORT=3000
+
+# WhatsApp Cloud API
+WHATSAPP_PHONE_NUMBER_ID=
+WHATSAPP_TOKEN=
+WHATSAPP_VERIFY_TOKEN=
+
+# IA opcional
+GEMINI_API_KEY=
+
+# Google Maps opcional
+GOOGLE_MAPS_API_KEY=
+
+# Datos de la panadería
+BAKERY_NAME=Panaderia Molinos
+BAKERY_ADDRESS=
+HUMAN_ATTENTION_SCHEDULE=7:00 a.m. a 7:00 p.m.
+
+# Pagos
+PAYMENT_BANK=Nequi
+PAYMENT_ACCOUNT_NUMBER=
+PAYMENT_HOLDER_NAME=
+
+# Horario del bot
+BOT_ONLY_NIGHT=false
+BOT_TIMEZONE=America/Bogota
+BOT_START_TIME=07:00
+BOT_END_TIME=19:00
+
+# Notificaciones opcionales
+MAKE_WEBHOOK_URL=
+```
+
+`WHATSAPP_TOKEN` y `WHATSAPP_PHONE_NUMBER_ID` son necesarios para enviar
+respuestas a WhatsApp. `WHATSAPP_VERIFY_TOKEN` debe coincidir exactamente con
+el token configurado en Meta.
+
+Si `GEMINI_API_KEY`, `GOOGLE_MAPS_API_KEY` o `MAKE_WEBHOOK_URL` están vacías,
+esas integraciones se desactivan y el flujo principal sigue funcionando.
+
+## Configurar el webhook de Meta
+
+Después de desplegar el bot, configura en Meta:
+
+- **Callback URL:** `https://TU-SERVICIO.onrender.com/webhook`
+- **Verify token:** el mismo valor de `WHATSAPP_VERIFY_TOKEN`
+- **Suscripción:** `messages`
+
+Endpoints principales:
+
+| Método | Ruta | Uso |
+| --- | --- | --- |
+| `GET` | `/` | Estado básico del servicio |
+| `GET` | `/health` | Health check |
+| `GET` | `/webhook` | Verificación de Meta |
+| `POST` | `/webhook` | Mensajes entrantes de WhatsApp |
+| `GET` | `/privacidad` | Página de privacidad |
+| `POST` | `/make` | Recepción de eventos desde Make |
+| `POST` | `/render` | Endpoint auxiliar para Render |
+
+## Desplegar en Render
+
+1. Crea un **Web Service** conectado a este repositorio.
+2. Usa la rama `devs` si quieres desplegar la versión de producción actual.
 3. Configura:
-   - **Build Command**: `npm install`
-   - **Start Command**: `npm start`
-4. En la pestaña **Environment**, agrega ahí (no en el código) todas las
-   variables que tienes en tu `.env` local: `GEMINI_API_KEY`,
-   `WHATSAPP_TOKEN`, `WHATSAPP_PHONE_NUMBER_ID`, `WHATSAPP_VERIFY_TOKEN`,
-   `BAKERY_NAME`, etc.
-5. Al desplegar, Render te da una URL pública
-   (`https://tu-servicio.onrender.com`). Esa es la que usas como
-   **Callback URL** del webhook de Meta (punto 4).
 
-Nota: en el plan gratuito de Render el servicio "se duerme" tras un rato sin
-tráfico y tarda unos segundos en despertar con el primer mensaje — normal
-en un plan gratuito, no es un error tuyo.
+   ```text
+   Build Command: npm install
+   Start Command: npm start
+   ```
 
-## 6. Dónde encaja Make (opcional)
+4. Agrega las variables de entorno en **Environment** de Render.
+5. Copia la URL pública de Render y úsala como `Callback URL` en Meta.
+6. Verifica que `https://TU-SERVICIO.onrender.com/health` responda
+   correctamente.
 
-No es obligatorio, pero si quieres que cada pedido también caiga en una hoja
-de Google Sheets, te llegue una notificación a Telegram, etc.:
+No pongas tokens en el código ni en el repositorio. Si un token se filtra,
+revócalo y genera uno nuevo antes de actualizar Render.
 
-1. En Make, crea un escenario nuevo con el módulo **Webhooks → Custom webhook**.
-2. Copia la URL que te da Make y pégala en `.env` como `MAKE_WEBHOOK_URL`.
-3. Cada vez que un cliente completa un pedido o pide hablar con alguien,
-   `notify.js` le manda automáticamente esos datos a esa URL — desde ahí armas
-   en Make lo que necesites (Google Sheets, correo, Telegram, etc.).
+## Validar el menú
 
-Si dejas `MAKE_WEBHOOK_URL` vacío, esto simplemente no hace nada; el bot no
-se ve afectado.
+El proyecto incluye un validador para detectar errores en el catálogo:
 
-## 7. Cómo editar el menú o los textos del bot
+```bash
+npm run validate:menu
+```
 
-- **Productos y precios** → edita `products.js`. Es un arreglo simple de
-  `[nombre, categoría, precio, etiquetas]`.
-- **Saludo, opciones del menú, horarios, mensajes fijos** → edita
-  `conversation.js`. Los textos están escritos directamente ahí.
-- **Cuándo usa IA en vez del flujo normal** → función `shouldUseAi` dentro
-  de `conversation.js`.
-# ChatBotPanaderia
+Ejecuta esta validación después de modificar los productos o precios.
+
+## Personalizar el bot
+
+- **Productos y precios:** `src/data/products.js`
+- **Barrios y domicilios:** `src/data/domicilio.js`
+- **Menú estructurado:** `src/data/menu_whatsapp_molinos.json`
+- **Flujo, mensajes y horarios:** `src/services/conversation.js`
+- **Respuestas de Gemini:** `src/services/ai.js`
+- **Envío de mensajes a WhatsApp:** `src/config/whatsapp.js`
+- **Notificaciones a Make:** `src/services/notify.js`
+
+Después de cambiar el menú, ejecuta:
+
+```bash
+npm run validate:menu
+```
+
+## Seguridad y Git
+
+El `.gitignore` excluye credenciales, payloads, logs, scripts de prueba y
+archivos temporales. El archivo `.env.example` puede conservarse localmente
+como referencia, pero no debe contener secretos reales.
+
+Para revisar qué archivos están rastreados:
+
+```bash
+git ls-files
+```
+
+Para comprobar que no se está rastreando el entorno local:
+
+```bash
+git check-ignore -v .env .env.example
+```
+
+## Licencia
+
+Proyecto personal de uso privado. No incluye una licencia de redistribución.
