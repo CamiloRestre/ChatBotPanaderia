@@ -306,7 +306,11 @@ const STEPS_HISTORY = {
 };
 
 function getFreshState(phone, extra = {}) {
-  const nextState = { step: "MAIN_MENU", cart: [], ...extra };
+  const previousState = states.get(phone);
+  const consentState = previousState && typeof previousState.dataConsent === "boolean"
+    ? { dataConsent: previousState.dataConsent }
+    : {};
+  const nextState = { step: "MAIN_MENU", cart: [], ...consentState, ...extra };
   states.set(phone, nextState);
   return nextState;
 }
@@ -340,6 +344,17 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
 
   const state = states.get(phone);
 
+  if (state?.step === "AWAITING_DATA_CONSENT") {
+    return handleDataConsentStep(phone, text, state);
+  }
+
+  if (
+    state?.step === "CONSENT_DECLINED" &&
+    (isGreetingLike(text) || isMenuCommand(text))
+  ) {
+    return sendAuthorizationPrompt(phone);
+  }
+
   if (
     state?.step === "CANCEL_OPTIONS" ||
     text === "cancel_product" ||
@@ -369,8 +384,12 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
   }
 
   if (isExactCommand(text, [...GREETINGS, ...MENU_COMMANDS])) {
-    getFreshState(phone);
-    return sendMainMenu(phone);
+    if (state?.dataConsent === true) {
+      getFreshState(phone, { dataConsent: true });
+      return sendMainMenu(phone);
+    }
+
+    return sendAuthorizationPrompt(phone);
   }
 
   if (isExactCommand(text, HUMAN_KEYWORDS) || isHumanRequest(text)) {
@@ -847,12 +866,60 @@ async function handleBack(phone) {
 // MENÚ PRINCIPAL
 // ---------------------------------------------------------------------------
 
-async function sendMainMenu(phone) {
-  getFreshState(phone);
-  await sendTextAndReturn(
+async function sendAuthorizationPrompt(phone) {
+  const state = getFreshState(phone);
+  state.step = "AWAITING_DATA_CONSENT";
+  states.set(phone, state);
+
+  await sendWhatsAppButtons(
     phone,
-    `¡Hola! 👋 Bienvenido/a a ${BAKERY_NAME}. ¿En qué te puedo ayudar?`
+    `¡Bienvenido/a a ${BAKERY_NAME}! 🥐\n\n` +
+      "Antes de empezar, cuéntanos: ¿nos autorizas a usar tus datos?\n\n" +
+      "Los usamos solo para:\n" +
+      "🛒 Tomar y entregar tu pedido.\n" +
+      "📲 Avisarte cuando esté listo.\n" +
+      "💬 Ayudarte si necesitas algo.\n\n" +
+      "Política de Privacidad aquí:\n" +
+      "https://camilo-proyectos.onrender.com/politica-de-privacidad/",
+    [
+      { id: "auth_si", title: "Sí, autorizo" },
+      { id: "auth_no", title: "No, gracias" }
+    ]
   );
+
+  return "solicitud de autorización enviada";
+}
+
+async function handleDataConsentStep(phone, text, state) {
+  if (text === "auth_si" || isYes(text)) {
+    state.dataConsent = true;
+    state.step = "MAIN_MENU";
+    state.cart = [];
+    states.set(phone, state);
+    return sendMainMenu(phone);
+  }
+
+  if (text === "auth_no" || isNo(text)) {
+    state.dataConsent = false;
+    state.step = "CONSENT_DECLINED";
+    states.set(phone, state);
+    return sendTextAndReturn(
+      phone,
+      "Entendemos. Sin tu autorización no podemos procesar tu pedido.\n\n" +
+        'Si cambias de opinión, escribe "hola" para empezar de nuevo.'
+    );
+  }
+
+  return sendAuthorizationPrompt(phone);
+}
+
+async function sendMainMenu(phone) {
+  const currentState = states.get(phone);
+  const state = getFreshState(phone, {
+    ...(currentState?.dataConsent === true ? { dataConsent: true } : {})
+  });
+  state.step = "MAIN_MENU";
+  states.set(phone, state);
 
   await sendWhatsAppList(
     phone,
@@ -870,7 +937,7 @@ async function sendMainMenu(phone) {
     `Hola 👋 ${BAKERY_NAME}`
   );
 
-  return "saludo y menú principal enviados";
+  return "menú principal enviado";
 }
 
 async function handleMainMenuStep(phone, text, rawText, state) {
