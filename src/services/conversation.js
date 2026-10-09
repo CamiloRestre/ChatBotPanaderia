@@ -321,7 +321,7 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
   const text = normalize(rawText);
 
   if (!isBotAllowedToRespond()) {
-    console.log(`Mensaje recibido fuera del horario del bot. Cliente: ${phone}`);
+    console.log("Mensaje recibido fuera del horario del bot.");
     return;
   }
 
@@ -1605,7 +1605,7 @@ async function sendContactPhoneQuestion(phone, state) {
 function handleContactPhoneStep(phone, text, state) {
   if (text === "tel_mismo") {
     state.contactPhone = phone;
-    console.log("📞 Teléfono de contacto guardado:", state.contactPhone);
+    console.log("📞 Teléfono de contacto guardado.");
     state.step = "ASK_PAYMENT_METHOD";
     states.set(phone, state);
     return sendPaymentQuestion(phone);
@@ -1634,7 +1634,7 @@ function handleOtherPhoneStep(phone, rawText, state) {
   }
 
   state.contactPhone = contactPhone;
-  console.log("📞 Teléfono de contacto guardado:", state.contactPhone);
+  console.log("📞 Teléfono de contacto guardado.");
   state.step = "ASK_PAYMENT_METHOD";
   states.set(phone, state);
 
@@ -1700,9 +1700,7 @@ async function handlePaymentMethodStep(phone, text, state) {
     total: state.totalPrice
   };
 
-  console.log("\n📦 PEDIDO NUEVO");
-  console.log(JSON.stringify(orderPayload, null, 2));
-  console.log("Estado: pendiente de confirmación\n");
+  console.log("📦 Pedido nuevo registrado. Estado: pendiente de confirmación.");
 
   await notifyMake("nuevo_pedido", orderPayload);
 
@@ -1929,9 +1927,7 @@ async function handleLeadNeedStep(phone, rawText, state) {
     need: state.need
   };
 
-  console.log("\n📩 SOLICITUD DE ATENCIÓN PERSONALIZADA");
-  console.log(JSON.stringify(leadPayload, null, 2));
-  console.log("Estado: pendiente de revisión por el equipo\n");
+  console.log("📩 Solicitud de atención personalizada registrada. Estado: pendiente de revisión.");
 
   await notifyMake("solicitud_atencion", leadPayload);
 

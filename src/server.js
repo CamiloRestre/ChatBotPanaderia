@@ -74,11 +74,14 @@ function extractInboundMessage(payload) {
 
 app.post("/make", async (req, res) => {
   const payload = req.body || {};
-  console.log("📥 Payload recibido:", JSON.stringify(req.body, null, 2));
 
   try {
     const { phone, text: messageSource, type: messageType } = extractInboundMessage(payload);
-    console.log("📥 Mensaje extraído:", messageSource);
+    const messageId = payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.id
+      ?? payload.messages?.[0]?.id
+      ?? "sin ID";
+    console.log("📥 Mensaje recibido. Tipo:", messageType || "desconocido");
+    console.log("📥 ID del mensaje:", messageId);
 
     if (messageType === "text" && (!messageSource || !String(messageSource).trim())) {
       return res.status(200).json({
@@ -106,7 +109,7 @@ app.post("/make", async (req, res) => {
 
     return res.status(200).json({ ok: true, respuesta });
   } catch (error) {
-    console.error("❌ Error procesando el mensaje:", error);
+    console.error("❌ Error procesando el mensaje:", error.message);
     return res.status(200).json({
       ok: false,
       error: "Error interno",
@@ -116,8 +119,7 @@ app.post("/make", async (req, res) => {
 });
 
 app.post("/render", (req, res) => {
-  const payload = req.body || {};
-  console.log("📥 Evento de Render recibido:", JSON.stringify(payload));
+  console.log("📥 Evento de Render recibido.");
 
   return res.status(200).json({
     ok: true,
@@ -164,18 +166,17 @@ app.post("/webhook", async (req, res) => {
 
     if (!message) return;
 
-    console.log("📨 Mensaje recibido:", JSON.stringify(message, null, 2));
+    console.log("📨 Mensaje recibido. Tipo:", message.type || "desconocido");
+    console.log("📨 ID del mensaje:", message.id || "sin ID");
 
     const phone = message.from;
     const text = extractIncomingText(message);
-    console.log("📥 Payload recibido:", JSON.stringify(req.body, null, 2));
-    console.log("📥 Mensaje extraído:", text);
 
     if (message.type === "text" && (!text || !String(text).trim())) return;
 
     await handleIncomingMessage(phone, text || "", message.type || "text");
   } catch (error) {
-    console.error("❌ Error procesando el mensaje entrante:", error);
+    console.error("❌ Error procesando el mensaje entrante:", error.message);
   }
 });
 

@@ -12,9 +12,8 @@ const WHATSAPP_TOKEN = process.env.WHATSAPP_TOKEN;
 
 async function callGraphApi(payload) {
   if (!PHONE_NUMBER_ID || !WHATSAPP_TOKEN) {
-    console.log(
-      "⚠️ Faltan WHATSAPP_PHONE_NUMBER_ID o WHATSAPP_TOKEN en el .env. No se envió el mensaje:",
-      JSON.stringify(payload)
+    console.error(
+      "⚠️ Faltan WHATSAPP_PHONE_NUMBER_ID o WHATSAPP_TOKEN. No se envió el mensaje."
     );
     return null;
   }
@@ -39,7 +38,12 @@ async function callGraphApi(payload) {
     clearTimeout(timeout);
 
     if (!response.ok) {
-      console.error("❌ Error enviando mensaje de WhatsApp:", JSON.stringify(data));
+      console.error(
+        "❌ Error enviando mensaje de WhatsApp. Estado:",
+        response.status,
+        "Detalle:",
+        data?.error?.message || "respuesta no disponible"
+      );
     }
 
     return data;
