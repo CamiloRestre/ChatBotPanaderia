@@ -1,4 +1,5 @@
 // server.js
+import crypto from "node:crypto";
 import express from "express";
 import dotenv from "dotenv";
 import { handleIncomingMessage } from "./services/conversation.js";
@@ -6,10 +7,88 @@ import { handleIncomingMessage } from "./services/conversation.js";
 dotenv.config({ override: true });
 
 const app = express();
-app.use(express.json());
+
+const processedMessageIds = new Map();
+const MESSAGE_ID_TTL_MS = 24 * 60 * 60 * 1000;
+const MESSAGE_ID_CLEANUP_INTERVAL_MS = 60 * 60 * 1000;
+
+function captureRawBody(req, _res, buffer) {
+  req.rawBody = Buffer.from(buffer);
+}
+
+app.use(express.json({ limit: "50kb", verify: captureRawBody }));
 
 const PORT = process.env.PORT || 3000;
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || "cambia_este_token";
+const META_APP_SECRET = process.env.META_APP_SECRET;
+const MAKE_SECRET = process.env.MAKE_SECRET;
+
+const messageIdCleanupTimer = setInterval(() => {
+  const expiration = Date.now() - MESSAGE_ID_TTL_MS;
+
+  for (const [messageId, processedAt] of processedMessageIds) {
+    if (processedAt <= expiration) {
+      processedMessageIds.delete(messageId);
+    }
+  }
+}, MESSAGE_ID_CLEANUP_INTERVAL_MS);
+messageIdCleanupTimer.unref();
+
+function hasProcessedMessage(messageId) {
+  if (!messageId) return false;
+
+  const processedAt = processedMessageIds.get(messageId);
+  if (!processedAt) return false;
+
+  if (processedAt <= Date.now() - MESSAGE_ID_TTL_MS) {
+    processedMessageIds.delete(messageId);
+    return false;
+  }
+
+  return true;
+}
+
+function markMessageAsProcessed(messageId) {
+  if (messageId) {
+    processedMessageIds.set(messageId, Date.now());
+  }
+}
+
+function isValidMetaSignature(req) {
+  const signature = req.get("x-hub-signature-256");
+
+  if (!META_APP_SECRET || !signature || !req.rawBody) {
+    return false;
+  }
+
+  const expectedSignature = `sha256=${crypto
+    .createHmac("sha256", META_APP_SECRET)
+    .update(req.rawBody)
+    .digest("hex")}`;
+  const provided = Buffer.from(signature, "utf8");
+  const expected = Buffer.from(expectedSignature, "utf8");
+
+  return (
+    provided.length === expected.length &&
+    crypto.timingSafeEqual(provided, expected)
+  );
+}
+
+function hasValidMakeSecret(req) {
+  const providedSecret = req.get("x-make-secret");
+
+  if (!MAKE_SECRET || !providedSecret) {
+    return false;
+  }
+
+  const provided = Buffer.from(providedSecret, "utf8");
+  const expected = Buffer.from(MAKE_SECRET, "utf8");
+
+  return (
+    provided.length === expected.length &&
+    crypto.timingSafeEqual(provided, expected)
+  );
+}
 
 app.get("/", (req, res) => {
   res.send("Bot de la panadería funcionando ✅");
@@ -73,15 +152,25 @@ function extractInboundMessage(payload) {
 }
 
 app.post("/make", async (req, res) => {
+  if (!hasValidMakeSecret(req)) {
+    console.warn("⚠️ Solicitud /make rechazada: secreto inválido.");
+    return res.sendStatus(403);
+  }
+
   const payload = req.body || {};
 
   try {
     const { phone, text: messageSource, type: messageType } = extractInboundMessage(payload);
     const messageId = payload.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.id
-      ?? payload.messages?.[0]?.id
-      ?? "sin ID";
+      ?? payload.messages?.[0]?.id;
     console.log("📥 Mensaje recibido. Tipo:", messageType || "desconocido");
-    console.log("📥 ID del mensaje:", messageId);
+
+    if (hasProcessedMessage(messageId)) {
+      console.log("📥 Mensaje duplicado ignorado.");
+      return res.status(200).json({ ok: true, duplicate: true });
+    }
+
+    markMessageAsProcessed(messageId);
 
     if (messageType === "text" && (!messageSource || !String(messageSource).trim())) {
       return res.status(200).json({
@@ -156,6 +245,11 @@ app.get("/webhook", (req, res) => {
 });
 
 app.post("/webhook", async (req, res) => {
+  if (!isValidMetaSignature(req)) {
+    console.warn("⚠️ Solicitud /webhook rechazada: firma inválida.");
+    return res.sendStatus(403);
+  }
+
   res.sendStatus(200);
 
   try {
@@ -167,7 +261,13 @@ app.post("/webhook", async (req, res) => {
     if (!message) return;
 
     console.log("📨 Mensaje recibido. Tipo:", message.type || "desconocido");
-    console.log("📨 ID del mensaje:", message.id || "sin ID");
+
+    if (hasProcessedMessage(message.id)) {
+      console.log("📨 Mensaje duplicado ignorado.");
+      return;
+    }
+
+    markMessageAsProcessed(message.id);
 
     const phone = message.from;
     const text = extractIncomingText(message);
@@ -178,6 +278,24 @@ app.post("/webhook", async (req, res) => {
   } catch (error) {
     console.error("❌ Error procesando el mensaje entrante:", error.message);
   }
+});
+
+app.use((error, _req, res, next) => {
+  if (error.type === "entity.too.large") {
+    return res.status(413).json({
+      ok: false,
+      error: "Payload demasiado grande"
+    });
+  }
+
+  if (error instanceof SyntaxError && error.status === 400) {
+    return res.status(400).json({
+      ok: false,
+      error: "Payload JSON inválido"
+    });
+  }
+
+  return next(error);
 });
 
 app.listen(PORT, () => {
