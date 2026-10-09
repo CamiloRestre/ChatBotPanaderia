@@ -322,6 +322,24 @@ async function sendTextAndReturn(phone, text) {
   return text;
 }
 
+export async function finalizeHumanAttention(phone) {
+  const state = states.get(phone);
+
+  if (!state || state.step !== "WAITING_HUMAN") {
+    return false;
+  }
+
+  const dataConsent = state.dataConsent === true ? { dataConsent: true } : {};
+  getFreshState(phone, dataConsent);
+
+  await sendTextAndReturn(
+    phone,
+    "La atención con el equipo ha finalizado ✅\n\nRetomo el servicio automático. Escribe *menu* para ver las opciones."
+  );
+
+  return true;
+}
+
 export async function handleIncomingMessage(phone, message, messageType = "text") {
   const rawText = String(message || "").trim();
   const text = normalize(rawText);
@@ -335,12 +353,8 @@ export async function handleIncomingMessage(phone, message, messageType = "text"
 
   if (state?.step === "WAITING_HUMAN") {
     if (messageType === "text" && text === HUMAN_ATTENTION_FINISHED_COMMAND) {
-      const dataConsent = state.dataConsent === true ? { dataConsent: true } : {};
-      getFreshState(phone, dataConsent);
-      return sendTextAndReturn(
-        phone,
-        "Atención finalizada ✅ Retomo el servicio automático. Escribe *menu* para ver las opciones."
-      );
+      await finalizeHumanAttention(phone);
+      return "atención manual finalizada";
     }
 
     // La atención queda en manos del equipo hasta recibir FINALIZADO.

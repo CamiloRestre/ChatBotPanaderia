@@ -2,7 +2,10 @@
 import crypto from "node:crypto";
 import express from "express";
 import dotenv from "dotenv";
-import { handleIncomingMessage } from "./services/conversation.js";
+import {
+  finalizeHumanAttention,
+  handleIncomingMessage
+} from "./services/conversation.js";
 
 dotenv.config({ override: true });
 
@@ -88,6 +91,30 @@ function hasValidMakeSecret(req) {
     provided.length === expected.length &&
     crypto.timingSafeEqual(provided, expected)
   );
+}
+
+function extractMakeFinalization(payload) {
+  const data = payload?.data || {};
+  const phone =
+    payload?.phone ??
+    payload?.from ??
+    payload?.to ??
+    payload?.contactPhone ??
+    data.phone ??
+    data.from ??
+    data.to ??
+    data.contactPhone ??
+    null;
+  const text =
+    payload?.text ??
+    payload?.message ??
+    payload?.body ??
+    data.text ??
+    data.message ??
+    data.body ??
+    null;
+
+  return { phone, text };
 }
 
 app.get("/", (req, res) => {
@@ -203,6 +230,37 @@ app.post("/make", async (req, res) => {
       ok: false,
       error: "Error interno",
       respuesta: "Hubo un error procesando tu mensaje. Intenta de nuevo."
+    });
+  }
+});
+
+app.post("/make/finalizado", async (req, res) => {
+  if (!hasValidMakeSecret(req)) {
+    console.warn("⚠️ Solicitud /make/finalizado rechazada: secreto inválido.");
+    return res.sendStatus(403);
+  }
+
+  const { phone, text } = extractMakeFinalization(req.body || {});
+
+  if (!phone || String(text || "").trim().toLowerCase() !== "finalizado") {
+    return res.status(400).json({
+      ok: false,
+      error: "Se requiere phone y el texto FINALIZADO."
+    });
+  }
+
+  try {
+    const finalized = await finalizeHumanAttention(String(phone).trim());
+
+    return res.status(200).json({
+      ok: true,
+      finalized
+    });
+  } catch (error) {
+    console.error("❌ Error finalizando atención manual:", error.message);
+    return res.status(500).json({
+      ok: false,
+      error: "No se pudo finalizar la atención."
     });
   }
 });
