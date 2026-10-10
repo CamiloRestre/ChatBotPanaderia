@@ -6,6 +6,11 @@ import {
   finalizeHumanAttention,
   handleIncomingMessage
 } from "./services/conversation.js";
+import {
+  createOrder,
+  listPendingOrders,
+  markOrderAsPrinted
+} from "./services/orders.js";
 
 dotenv.config({ override: true });
 
@@ -25,6 +30,22 @@ const PORT = process.env.PORT || 3000;
 const VERIFY_TOKEN = process.env.WHATSAPP_VERIFY_TOKEN || "cambia_este_token";
 const META_APP_SECRET = process.env.META_APP_SECRET;
 const MAKE_SECRET = process.env.MAKE_SECRET;
+const API_TOKEN = process.env.API_TOKEN;
+
+function hasValidApiToken(req) {
+  const authorization = req.get("authorization") || "";
+  const provided = authorization.startsWith("Bearer ")
+    ? authorization.slice("Bearer ".length)
+    : "";
+  return Boolean(API_TOKEN && provided && provided === API_TOKEN);
+}
+
+function requireApiToken(req, res, next) {
+  if (!hasValidApiToken(req)) {
+    return res.status(401).json({ ok: false, error: "Token inválido." });
+  }
+  return next();
+}
 
 const messageIdCleanupTimer = setInterval(() => {
   const expiration = Date.now() - MESSAGE_ID_TTL_MS;
@@ -123,6 +144,43 @@ app.get("/", (req, res) => {
 
 app.get("/health", (_req, res) => {
   res.status(200).send("OK");
+});
+
+app.post("/pedidos", requireApiToken, async (req, res) => {
+  try {
+    const order = await createOrder(req.body);
+    return res.status(201).json({ ok: true, pedido: order });
+  } catch (error) {
+    const statusCode = error.statusCode || 500;
+    console.error("❌ Error guardando pedido:", error.message);
+    return res.status(statusCode).json({
+      ok: false,
+      error: statusCode === 500 ? "No se pudo guardar el pedido." : error.message
+    });
+  }
+});
+
+app.get("/pedidos/pendientes", requireApiToken, async (_req, res) => {
+  try {
+    const orders = await listPendingOrders();
+    return res.status(200).json({ ok: true, pedidos: orders });
+  } catch (error) {
+    console.error("❌ Error leyendo pedidos pendientes:", error.message);
+    return res.status(500).json({ ok: false, error: "No se pudieron leer los pedidos." });
+  }
+});
+
+app.post("/pedidos/:id/impreso", requireApiToken, async (req, res) => {
+  try {
+    const order = await markOrderAsPrinted(req.params.id);
+    if (!order) {
+      return res.status(404).json({ ok: false, error: "Pedido no encontrado." });
+    }
+    return res.status(200).json({ ok: true, pedido: order });
+  } catch (error) {
+    console.error("❌ Error marcando pedido como impreso:", error.message);
+    return res.status(500).json({ ok: false, error: "No se pudo marcar el pedido." });
+  }
 });
 
 function extractIncomingText(message) {
