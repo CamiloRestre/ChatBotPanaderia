@@ -47,9 +47,12 @@ function normalizeOrder(payload) {
     telefono: String(order.telefono ?? "").trim(),
     direccion: String(order.direccion ?? "").trim(),
     referencia: String(order.referencia ?? "").trim(),
+    neighborhood: String(order.neighborhood ?? "").trim(),
+    deliveryMethod: String(order.deliveryMethod ?? "").trim(),
     productos: order.productos.map((product) => ({
       cantidad: String(product.cantidad).trim(),
-      nombre: String(product.nombre).trim()
+      nombre: String(product.nombre).trim(),
+      nota: String(product.nota ?? "").trim()
     })),
     notas: String(order.notas ?? "").trim(),
     metodo_pago: String(order.metodo_pago).trim(),

@@ -3,6 +3,7 @@ import logging
 import os
 import tempfile
 import time
+from datetime import datetime
 from pathlib import Path
 
 import requests
@@ -68,36 +69,75 @@ def money(value):
     return clean_text(value)
 
 
+def format_date(value):
+    """Format an ISO date as dd/mm/aaaa hh:mm for the receipt."""
+    raw_value = clean_text(value)
+    if not raw_value:
+        return ""
+
+    try:
+        parsed = datetime.fromisoformat(raw_value.replace("Z", "+00:00"))
+        return parsed.strftime("%d/%m/%Y %H:%M")
+    except ValueError:
+        return raw_value
+
+
+def add_labeled_lines(lines, label, value, style="normal"):
+    lines.extend((style, item) for item in line(label, value))
+
+
 def build_receipt(order):
+    delivery_method = clean_text(order.get("deliveryMethod")).lower()
+    is_delivery = delivery_method in {"domicilio", "delivery", "a domicilio"}
+    order_type = "PEDIDO DOMICILIO" if is_delivery else "PEDIDO RECOGER"
+    domicilio = order.get("domicilio")
+    if domicilio is None:
+        domicilio = order.get("deliveryCost")
+
     lines = []
-    lines.append(("center", "PEDIDO DOMICILIO"))
+    lines.append(("center", order_type))
     lines.append(("bold", f"PEDIDO #{clean_text(order.get('numero'))}"))
     lines.append(("bold", "=" * LINE_WIDTH))
-    lines.extend(("normal", item) for item in line("Fecha", order.get("fecha")))
-    lines.extend(("normal", item) for item in line("Cliente", order.get("cliente")))
-    lines.extend(("normal", item) for item in line("Teléfono", order.get("telefono")))
-    lines.extend(("bold", item) for item in line("Dirección", order.get("direccion")))
-    if order.get("referencia"):
-        lines.extend(("normal", item) for item in line("Referencia", order.get("referencia")))
+    add_labeled_lines(lines, "Fecha", format_date(order.get("fecha")))
+    add_labeled_lines(lines, "Cliente", order.get("cliente"))
+    add_labeled_lines(lines, "Teléfono", order.get("telefono"))
+
+    if is_delivery:
+        add_labeled_lines(lines, "Dirección", order.get("direccion"), "bold")
+        reference = order.get("referencia") or order.get("neighborhood")
+        if reference:
+            add_labeled_lines(lines, "Referencia", reference)
+
     lines.append(("normal", "-" * LINE_WIDTH))
     lines.append(("bold", f"{'CANT':<5}{'PRODUCTO':<{LINE_WIDTH - 5}}"))
     lines.append(("normal", "-" * LINE_WIDTH))
+
     for product in order.get("productos", []):
         quantity = clean_text(product.get("cantidad"))
         name_lines = wrap_text(product.get("nombre"), LINE_WIDTH - 5)
         lines.append(("normal", f"{quantity[:5]:<5}{name_lines[0]}"))
         lines.extend(("normal", f"{'':<5}{item}") for item in name_lines[1:])
+
+        if product.get("nota"):
+            for note_line in line("Nota", product.get("nota")):
+                lines.append(("normal", f"{'':<5}{note_line}"[:LINE_WIDTH]))
+
     lines.append(("normal", "-" * LINE_WIDTH))
+
     if order.get("notas"):
-        lines.extend(("normal", item) for item in line("Notas", order.get("notas")))
+        add_labeled_lines(lines, "Notas", order.get("notas"))
+
     if order.get("subtotal") is not None:
-        lines.extend(("normal", item) for item in line("Subtotal", money(order.get("subtotal"))))
-    if order.get("domicilio") is not None:
-        lines.extend(("normal", item) for item in line("Domicilio", money(order.get("domicilio"))))
+        add_labeled_lines(lines, "Subtotal", money(order.get("subtotal")))
+    if domicilio is not None and is_delivery:
+        add_labeled_lines(lines, "Domicilio", money(domicilio))
+
     lines.extend(("bold", item) for item in line("TOTAL", money(order.get("total"))))
+    add_labeled_lines(lines, "Pago", order.get("metodo_pago"))
+
     if order.get("paga_con"):
-        lines.extend(("normal", item) for item in line("Paga con", money(order.get("paga_con"))))
-    lines.extend(("normal", item) for item in line("Pago", order.get("metodo_pago")))
+        add_labeled_lines(lines, "Paga con", money(order.get("paga_con")))
+
     lines.append(("bold", "=" * LINE_WIDTH))
     lines.extend(("normal", "") for _ in range(4))
     return lines

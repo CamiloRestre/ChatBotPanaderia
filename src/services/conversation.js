@@ -1816,13 +1816,16 @@ async function handlePaymentMethodStep(phone, text, state) {
         fecha: new Date().toISOString(),
         cliente: state.customerName,
         telefono: state.contactPhone || phone,
+        deliveryMethod: state.deliveryMethod,
         direccion: state.deliveryMethod === "domicilio"
           ? state.address
           : "Recoger en panadería",
         referencia: state.neighborhood || "",
+        neighborhood: state.neighborhood || "",
         productos: state.cart.map((item) => ({
           cantidad: item.quantity,
-          nombre: item.product.name
+          nombre: item.product.name,
+          nota: item.note || ""
         })),
         notas: state.cart.map((item) => item.note).filter(Boolean).join(", ") || "",
         metodo_pago: state.paymentMethod,
