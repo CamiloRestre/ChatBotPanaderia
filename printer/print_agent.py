@@ -82,71 +82,90 @@ def format_date(value):
         return raw_value
 
 
-def add_labeled_lines(lines, label, value, style="normal"):
-    lines.extend((style, item) for item in line(label, value))
-
-
 def build_receipt(order):
+    lines = []
+
+    # Determinar si es domicilio o recoger
     delivery_method = clean_text(
         order.get("deliveryMethod") or order.get("metodo_entrega")
     ).lower()
     is_delivery = "domicilio" in delivery_method
-    order_type = "PEDIDO DOMICILIO" if is_delivery else "PEDIDO RECOGER"
-    domicilio = order.get("deliveryCost")
-    if domicilio is None:
-        domicilio = order.get("domicilio")
 
-    lines = []
-    lines.append(("center", order_type))
+    # Encabezado según el tipo
+    header = "PEDIDO DOMICILIO" if is_delivery else "PEDIDO RECOGER"
+    lines.append(("center", header))
     lines.append(("bold", f"PEDIDO #{clean_text(order.get('numero'))}"))
     lines.append(("bold", "=" * LINE_WIDTH))
-    add_labeled_lines(lines, "Fecha", format_date(order.get("fecha")))
-    add_labeled_lines(lines, "Cliente", order.get("cliente"))
-    add_labeled_lines(lines, "Teléfono", order.get("telefono"))
 
+    # Fecha formateada
+    lines.extend(("normal", item) for item in line("Fecha", format_date(order.get("fecha"))))
+
+    # Datos del cliente
+    lines.extend(("normal", item) for item in line("Cliente", order.get("cliente")))
+    lines.extend(("normal", item) for item in line("Teléfono", order.get("telefono")))
+
+    # Dirección y referencia (solo si es domicilio)
     if is_delivery:
-        add_labeled_lines(lines, "Dirección", order.get("direccion"), "bold")
-        reference = order.get("referencia") or order.get("neighborhood")
-        if reference:
-            add_labeled_lines(lines, "Referencia", reference)
+        if order.get("direccion"):
+            lines.extend(("bold", item) for item in line("Dirección", order.get("direccion")))
+        ref = order.get("referencia") or order.get("neighborhood")
+        if ref:
+            lines.extend(("normal", item) for item in line("Barrio", ref))
 
     lines.append(("normal", "-" * LINE_WIDTH))
+
+    # Encabezado de productos
     lines.append(("bold", f"{'CANT':<5}{'PRODUCTO':<{LINE_WIDTH - 5}}"))
     lines.append(("normal", "-" * LINE_WIDTH))
 
+    # Productos con su nota individual
     for product in order.get("productos", []):
         quantity = clean_text(product.get("cantidad"))
         name_lines = wrap_text(product.get("nombre"), LINE_WIDTH - 5)
+
+        # Línea del producto con cantidad
         lines.append(("normal", f"{quantity[:5]:<5}{name_lines[0]}"))
+
+        # Líneas adicionales del nombre
         lines.extend(("normal", f"{'':<5}{item}") for item in name_lines[1:])
 
-        if product.get("nota"):
-            note_lines = wrap_text(product.get("nota"), LINE_WIDTH - 8)
+        # Nota individual del producto (prefijo ">> " = 8 columnas en total)
+        product_note = product.get("nota")
+        if product_note:
+            note_lines = wrap_text(product_note, LINE_WIDTH - 8)
             lines.append(("normal", f"{'':<5}>> {note_lines[0]}"))
-            lines.extend(
-                ("normal", f"{'':<7}{item}")
-                for item in note_lines[1:]
-            )
+            lines.extend(("normal", f"{'':<8}{item}") for item in note_lines[1:])
 
     lines.append(("normal", "-" * LINE_WIDTH))
 
+    # Notas generales del pedido
     if order.get("notas"):
-        add_labeled_lines(lines, "Notas", order.get("notas"))
+        lines.extend(("normal", item) for item in line("Notas", order.get("notas")))
 
-    if order.get("subtotal") is not None:
-        add_labeled_lines(lines, "Subtotal", money(order.get("subtotal")))
-    if domicilio is not None and is_delivery:
-        add_labeled_lines(lines, "Domicilio", money(domicilio))
+    # Subtotal
+    subtotal = order.get("subtotal")
+    if subtotal is not None:
+        lines.extend(("normal", item) for item in line("Subtotal", money(subtotal)))
 
+    # Domicilio (solo si es domicilio y tiene costo)
+    delivery_cost = order.get("domicilio") or order.get("deliveryCost")
+    if is_delivery and delivery_cost:
+        lines.extend(("normal", item) for item in line("Domicilio", money(delivery_cost)))
+
+    # Total
     lines.extend(("bold", item) for item in line("TOTAL", money(order.get("total"))))
-    payment = order.get("metodo_pago") or order.get("paymentMethod") or ""
-    add_labeled_lines(lines, "Pago", payment)
 
+    # Paga con
     if order.get("paga_con"):
-        add_labeled_lines(lines, "Paga con", money(order.get("paga_con")))
+        lines.extend(("normal", item) for item in line("Paga con", money(order.get("paga_con"))))
+
+    # Método de pago
+    payment = order.get("metodo_pago") or order.get("paymentMethod") or ""
+    lines.extend(("normal", item) for item in line("Pago", payment))
 
     lines.append(("bold", "=" * LINE_WIDTH))
     lines.extend(("normal", "") for _ in range(4))
+
     return lines
 
 
