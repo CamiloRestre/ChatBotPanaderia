@@ -87,12 +87,14 @@ def add_labeled_lines(lines, label, value, style="normal"):
 
 
 def build_receipt(order):
-    delivery_method = clean_text(order.get("deliveryMethod")).lower()
-    is_delivery = delivery_method in {"domicilio", "delivery", "a domicilio"}
+    delivery_method = clean_text(
+        order.get("deliveryMethod") or order.get("metodo_entrega")
+    ).lower()
+    is_delivery = "domicilio" in delivery_method
     order_type = "PEDIDO DOMICILIO" if is_delivery else "PEDIDO RECOGER"
-    domicilio = order.get("domicilio")
+    domicilio = order.get("deliveryCost")
     if domicilio is None:
-        domicilio = order.get("deliveryCost")
+        domicilio = order.get("domicilio")
 
     lines = []
     lines.append(("center", order_type))
@@ -119,8 +121,12 @@ def build_receipt(order):
         lines.extend(("normal", f"{'':<5}{item}") for item in name_lines[1:])
 
         if product.get("nota"):
-            for note_line in line("Nota", product.get("nota")):
-                lines.append(("normal", f"{'':<5}{note_line}"[:LINE_WIDTH]))
+            note_lines = wrap_text(product.get("nota"), LINE_WIDTH - 8)
+            lines.append(("normal", f"{'':<5}>> {note_lines[0]}"))
+            lines.extend(
+                ("normal", f"{'':<7}{item}")
+                for item in note_lines[1:]
+            )
 
     lines.append(("normal", "-" * LINE_WIDTH))
 
@@ -133,7 +139,8 @@ def build_receipt(order):
         add_labeled_lines(lines, "Domicilio", money(domicilio))
 
     lines.extend(("bold", item) for item in line("TOTAL", money(order.get("total"))))
-    add_labeled_lines(lines, "Pago", order.get("metodo_pago"))
+    payment = order.get("metodo_pago") or order.get("paymentMethod") or ""
+    add_labeled_lines(lines, "Pago", payment)
 
     if order.get("paga_con"):
         add_labeled_lines(lines, "Paga con", money(order.get("paga_con")))
