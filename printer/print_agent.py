@@ -90,10 +90,14 @@ def build_receipt(order):
     lines.append(("normal", "-" * LINE_WIDTH))
     if order.get("notas"):
         lines.extend(("normal", item) for item in line("Notas", order.get("notas")))
-    lines.extend(("normal", item) for item in line("Pago", order.get("metodo_pago")))
+    if order.get("subtotal") is not None:
+        lines.extend(("normal", item) for item in line("Subtotal", money(order.get("subtotal"))))
+    if order.get("domicilio") is not None:
+        lines.extend(("normal", item) for item in line("Domicilio", money(order.get("domicilio"))))
     lines.extend(("bold", item) for item in line("TOTAL", money(order.get("total"))))
     if order.get("paga_con"):
         lines.extend(("normal", item) for item in line("Paga con", money(order.get("paga_con"))))
+    lines.extend(("normal", item) for item in line("Pago", order.get("metodo_pago")))
     lines.append(("bold", "=" * LINE_WIDTH))
     lines.extend(("normal", "") for _ in range(4))
     return lines

@@ -53,6 +53,8 @@ function normalizeOrder(payload) {
     })),
     notas: String(order.notas ?? "").trim(),
     metodo_pago: String(order.metodo_pago).trim(),
+    subtotal: order.subtotal ?? null,
+    domicilio: order.domicilio ?? order.deliveryCost ?? null,
     total: order.total,
     paga_con: order.paga_con === undefined || order.paga_con === null
       ? ""

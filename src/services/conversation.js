@@ -1826,6 +1826,8 @@ async function handlePaymentMethodStep(phone, text, state) {
         })),
         notas: state.cart.map((item) => item.note).filter(Boolean).join(", ") || "",
         metodo_pago: state.paymentMethod,
+        subtotal: state.subtotal,
+        domicilio: state.deliveryCost,
         total: state.totalPrice,
         paga_con: null
       })
