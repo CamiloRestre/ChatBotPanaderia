@@ -1801,6 +1801,50 @@ async function handlePaymentMethodStep(phone, text, state) {
 
   await notifyMake("nuevo_pedido", orderPayload);
 
+  try {
+    const renderUrl = (
+      process.env.RENDER_URL || "https://chatbotpanaderia.onrender.com"
+    ).replace(/\/+$/, "");
+    const printResponse = await fetch(`${renderUrl}/pedidos`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.API_TOKEN || ""}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        numero: `PEDIDO-${Date.now()}`,
+        fecha: new Date().toISOString(),
+        cliente: state.customerName,
+        telefono: state.contactPhone || phone,
+        direccion: state.deliveryMethod === "domicilio"
+          ? state.address
+          : "Recoger en panadería",
+        referencia: state.neighborhood || "",
+        productos: state.cart.map((item) => ({
+          cantidad: item.quantity,
+          nombre: item.product.name
+        })),
+        notas: state.cart.map((item) => item.note).filter(Boolean).join(", ") || "",
+        metodo_pago: state.paymentMethod,
+        total: state.totalPrice,
+        paga_con: null
+      })
+    });
+
+    if (!printResponse.ok) {
+      const responseBody = await printResponse.text();
+      console.error(
+        "❌ Error al enviar pedido a la cola de impresión:",
+        printResponse.status,
+        responseBody
+      );
+    } else {
+      console.log("🖨️ Pedido enviado a la cola de impresión.");
+    }
+  } catch (error) {
+    console.error("❌ Error de red al enviar pedido a impresión:", error.message);
+  }
+
   const paymentLine = paymentMethod === "transferencia"
     ? `💳 Pago: Transferencia\n\nTransfiere a:\n${PAYMENT_INFO.bank} — ${PAYMENT_INFO.accountNumber}\nTitular: ${PAYMENT_INFO.holderName}\n\nEnvía el comprobante por este chat.`
     : `💵 Pago: Efectivo contraentrega`;
