@@ -70,11 +70,9 @@ def money(value):
 
 
 def format_date(value):
-    """Format an ISO date as dd/mm/aaaa hh:mm for the receipt."""
     raw_value = clean_text(value)
     if not raw_value:
         return ""
-
     try:
         parsed = datetime.fromisoformat(raw_value.replace("Z", "+00:00"))
         return parsed.strftime("%d/%m/%Y %H:%M")
@@ -85,26 +83,20 @@ def format_date(value):
 def build_receipt(order):
     lines = []
 
-    # Determinar si es domicilio o recoger
     delivery_method = clean_text(
         order.get("deliveryMethod") or order.get("metodo_entrega")
     ).lower()
     is_delivery = "domicilio" in delivery_method
 
-    # Encabezado según el tipo
     header = "PEDIDO DOMICILIO" if is_delivery else "PEDIDO RECOGER"
     lines.append(("center", header))
     lines.append(("bold", f"PEDIDO #{clean_text(order.get('numero'))}"))
     lines.append(("bold", "=" * LINE_WIDTH))
 
-    # Fecha formateada
     lines.extend(("normal", item) for item in line("Fecha", format_date(order.get("fecha"))))
-
-    # Datos del cliente
     lines.extend(("normal", item) for item in line("Cliente", order.get("cliente")))
     lines.extend(("normal", item) for item in line("Teléfono", order.get("telefono")))
 
-    # Dirección y referencia (solo si es domicilio)
     if is_delivery:
         if order.get("direccion"):
             lines.extend(("bold", item) for item in line("Dirección", order.get("direccion")))
@@ -113,23 +105,14 @@ def build_receipt(order):
             lines.extend(("normal", item) for item in line("Barrio", ref))
 
     lines.append(("normal", "-" * LINE_WIDTH))
-
-    # Encabezado de productos
     lines.append(("bold", f"{'CANT':<5}{'PRODUCTO':<{LINE_WIDTH - 5}}"))
     lines.append(("normal", "-" * LINE_WIDTH))
 
-    # Productos con su nota individual
     for product in order.get("productos", []):
         quantity = clean_text(product.get("cantidad"))
         name_lines = wrap_text(product.get("nombre"), LINE_WIDTH - 5)
-
-        # Línea del producto con cantidad
         lines.append(("normal", f"{quantity[:5]:<5}{name_lines[0]}"))
-
-        # Líneas adicionales del nombre
         lines.extend(("normal", f"{'':<5}{item}") for item in name_lines[1:])
-
-        # Nota individual del producto (prefijo ">> " = 8 columnas en total)
         product_note = product.get("nota")
         if product_note:
             note_lines = wrap_text(product_note, LINE_WIDTH - 8)
@@ -138,28 +121,22 @@ def build_receipt(order):
 
     lines.append(("normal", "-" * LINE_WIDTH))
 
-    # Notas generales del pedido
     if order.get("notas"):
         lines.extend(("normal", item) for item in line("Notas", order.get("notas")))
 
-    # Subtotal
     subtotal = order.get("subtotal")
     if subtotal is not None:
         lines.extend(("normal", item) for item in line("Subtotal", money(subtotal)))
 
-    # Domicilio (solo si es domicilio y tiene costo)
     delivery_cost = order.get("domicilio") or order.get("deliveryCost")
     if is_delivery and delivery_cost:
         lines.extend(("normal", item) for item in line("Domicilio", money(delivery_cost)))
 
-    # Total
     lines.extend(("bold", item) for item in line("TOTAL", money(order.get("total"))))
 
-    # Paga con
     if order.get("paga_con"):
         lines.extend(("normal", item) for item in line("Paga con", money(order.get("paga_con"))))
 
-    # Método de pago
     payment = order.get("metodo_pago") or order.get("paymentMethod") or ""
     lines.extend(("normal", item) for item in line("Pago", payment))
 
@@ -188,7 +165,6 @@ def print_order(order):
                 else:
                     win32print.WritePrinter(printer, b"\x1ba\x00\x1bE\x00")
                 win32print.WritePrinter(printer, encode(text))
-            # ESC/POS cut command; printers without a cutter ignore it.
             win32print.WritePrinter(printer, b"\x1dV\x00")
             win32print.EndPagePrinter(printer)
         finally:

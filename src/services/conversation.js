@@ -19,7 +19,6 @@ import {
 import { getZonaByBarrio, getZonaByDistancia } from "../data/domicilio.js";
 import { calcularDistancia, geocodificarDireccion, PANADERIA_ADDRESS } from "../config/googleMaps.js";
 import { getAiSalesResponse } from "./ai.js";
-import { notifyMake } from "./notify.js";
 
 const states = new Map();
 
@@ -1778,28 +1777,7 @@ async function handlePaymentMethodStep(phone, text, state) {
 
   calculateCartTotals(state);
 
-  const orderPayload = {
-    phone,
-    customerName: state.customerName,
-    deliveryMethod: state.deliveryMethod,
-    contactPhone: state.contactPhone,
-    address: state.address,
-    neighborhood: state.neighborhood,
-    deliveryCost: state.deliveryCost,
-    subtotal: state.subtotal,
-    paymentMethod: state.paymentMethod,
-    items: state.cart.map((item) => ({
-      name: item.product.name,
-      quantity: item.quantity,
-      note: item.note || null,
-      subtotal: item.subtotal
-    })),
-    total: state.totalPrice
-  };
-
   console.log("📦 Pedido nuevo registrado. Estado: pendiente de confirmación.");
-
-  await notifyMake("nuevo_pedido", orderPayload);
 
   try {
     const renderUrl = (
@@ -2067,15 +2045,7 @@ async function handleLeadNeedStep(phone, rawText, state) {
   state.step = "WAITING_HUMAN";
   states.set(phone, state);
 
-  const leadPayload = {
-    phone,
-    customerName: state.customerName,
-    need: state.need
-  };
-
   console.log("📩 Solicitud de atención personalizada registrada. Estado: pendiente de revisión.");
-
-  await notifyMake("solicitud_atencion", leadPayload);
 
   return sendTextAndReturn(
     phone,
